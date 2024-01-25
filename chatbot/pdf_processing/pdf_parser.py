@@ -166,4 +166,4 @@ class process_pdf:
         fp = open(file_name, 'rb')
         self.list_pdf_lines(fp)
         self.process_pages(fp)
-        return {'file_name' : self.data}
+        return {'pages' : self.data}
