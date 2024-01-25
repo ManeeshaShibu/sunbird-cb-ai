@@ -1,0 +1,9 @@
+# An integrated service that hosts APIs for ingesting documents and providing matching chunks against a query
+
+# Pdf_Ingestion_PAI.py is the starting point of the service
+
+# How to run
+
+- create a new python environment with python version 3.9.17
+- install all the dependencies using "pip -r requirements.txt"
+- start service using "python Pdf_Ingestion_PAI.py"
