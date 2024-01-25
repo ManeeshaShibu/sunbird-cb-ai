@@ -36,7 +36,7 @@ model = SentenceTransformer('sentence-transformers/paraphrase-albert-small-v2')
     
 #     return text
 
-pdf_processor = process_pdf()
+
 
 def define_collection(collection_name):
     document_id = FieldSchema(name='document_id', dtype=DataType.INT64, is_primary=True, auto_id=True)
@@ -74,6 +74,7 @@ def clean_text(text):## logic for removing header and footer should be written h
 
 def extract_text_from_pdf(pdf_path):
     print('pdf processing started')
+    pdf_processor = process_pdf()
     nlp = spacy.load("en_core_web_sm")
     nlp.add_pipe(
         "fastcoref",
