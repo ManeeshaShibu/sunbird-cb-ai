@@ -1,5 +1,10 @@
 # An integrated service that hosts APIs for ingesting documents and providing matching chunks against a query
 
+# runnig milvus DB using docker locally
+
+    - navigate to milvus folder
+    - docker-compose up -d
+
 # qna_service.py is the starting point of the service
 
 # code is arranged into modules, repos and config folders.
