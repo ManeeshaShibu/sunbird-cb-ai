@@ -1,0 +1,5 @@
+{
+    "milvus_connection_name" : "qna_poc_test",
+    "milvus_port" : 19530,
+    "milvus_host" : "localhost"
+}
