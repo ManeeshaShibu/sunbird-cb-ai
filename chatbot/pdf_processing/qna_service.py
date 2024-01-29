@@ -4,17 +4,11 @@
 
 
 from flask import Flask, request, jsonify
-from pymilvus import CollectionSchema, FieldSchema, DataType, Collection, connections, utility
 import os
 import spacy
 import re
 import PyPDF2
-from fastcoref import spacy_component
-from sentence_transformers import SentenceTransformer
 import torch.nn.functional as F
-from werkzeug.utils import secure_filename
-from fastcoref import spacy_component
-from modules.pdf_parser import process_pdf
 from modules.coref_resolver import coref_impl
 from repo.milvus_entity import milvus_collection
 from modules.text_processor import process_text
