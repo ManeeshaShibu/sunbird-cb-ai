@@ -7,12 +7,12 @@ from string_grouper import group_similar_strings
 import enchant 
 import textdistance as td
 
-
+import json
 import math
 
 import pandas as pd
 
-from pdfminer_util import pdfminer_impl
+from modules.pdfminer_util import pdfminer_impl
 import io
 
 
@@ -147,8 +147,7 @@ class process_pdf:
             in_memory_pdf_file = io.BytesIO()
             pdf_writer.write(in_memory_pdf_file)
             in_memory_pdf_file.seek(0)
-            with open('data/tmp/' + str(page_number) + '.pdf',"wb") as tmp_file:
-                tmp_file.write(in_memory_pdf_file.read())
+            
             content['page_num'] = page_number
             content['text'] = self.pdf_to_text(in_memory_pdf_file)
             content['header'] = self.get_if_header(content['text'])
@@ -166,4 +165,7 @@ class process_pdf:
         fp = open(file_name, 'rb')
         self.list_pdf_lines(fp)
         self.process_pages(fp)
+        with open("output.json", "w") as outfile:
+            json.dump(self.data, outfile)
+            outfile.close()
         return {'pages' : self.data}

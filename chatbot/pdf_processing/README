@@ -1,9 +1,24 @@
 # An integrated service that hosts APIs for ingesting documents and providing matching chunks against a query
 
-# Pdf_Ingestion_PAI.py is the starting point of the service
+# qna_service.py is the starting point of the service
+
+# code is arranged into modules, repos and config folders.
+    - module has different sub services
+    - repo has DB handling code
+    - config has configuration used
 
 # How to run
 
 - create a new python environment with python version 3.9.17
 - install all the dependencies using "pip -r requirements.txt"
-- start service using "python Pdf_Ingestion_PAI.py"
+- start service using "python qna_service.py"
+
+#use
+
+## uploading a document for ingestion to vector DB 
+
+curl --location --request PUT 'localhost:5000/uploader' --form 'file=@"test.pdf"'  
+
+## querying over ingested documents
+
+curl --location 'localhost:5000/search-answers' --header 'Content-Type: application/json' --data '{"query" : "query text goes here"}'
