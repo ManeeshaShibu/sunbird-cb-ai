@@ -14,7 +14,7 @@ from repo.milvus_entity import milvus_collection
 from modules.text_processor import process_text
 import pandas as pd
 import json
-
+from modules.generative_model import answer_generation
 app = Flask(__name__)
 
 milvus = milvus_collection()
@@ -34,7 +34,7 @@ coref_obj = coref_impl()
 #     return text
 
 
-
+generate_answer = answer_generation()
 
 
 @app.route('/')
@@ -67,13 +67,10 @@ def upload_file():
         df.to_csv('check_text.csv')
     
         print(len(embedding_list))
-        print(len(text_list))
+        print(text_list)
         print(metadata_list)
-
         collection.insert([ embedding_list, text_list, metadata_list])
         
-       
-
         # Create an index on the "embeddings" field
         index_params = {
             'metric_type': 'L2',
@@ -120,6 +117,36 @@ def search_answers():
     answers_final = [search_results[0][i].entity.text for i in range(1,len(search_results[0]))]
 
     return jsonify({'answers_final': answers_final}), 200
+
+@app.route('/generate-answers', methods=['POST'])
+def generate_answers():
+    data = request.get_json()
+    print(data)
+    #collection_name = data.get('collection_name', '')
+    collection_name = CONF["milvus_connection_name"]
+    query = data.get('query', '')
+    print(collection_name)
+    print(query)
+    # Define and load the Milvus collection
+    collection = milvus.get_collection()
+    collection.load()
+    print("Collection loaded.")
+
+    # Encode the query
+    query_encode = text_processor.get_model().encode(query.lower())
+
+    # Perform a search to get answers
+    search_results = collection.search(data=[query_encode], anns_field="embeddings",
+                                      param={"metric": "L2", "offset": 0},
+                                      output_fields=["metadata", "metadata_page", "text"],
+                                      limit=10, consistency_level="Strong")
+    print(search_results)
+    # Extract relevant information from search results
+    answers_final = [search_results[0][i].entity.text for i in range(1,len(search_results[0]))]
+
+    generated_ans = generate_answer.openai_answer(query,answers_final)
+
+    return jsonify({'answers_final': generated_ans}), 200
 
 if __name__ == '__main__':
     print("running on 5000 port")

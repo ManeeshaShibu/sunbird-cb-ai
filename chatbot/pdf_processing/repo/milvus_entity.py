@@ -2,13 +2,12 @@
 from pymilvus import CollectionSchema, FieldSchema, DataType, Collection, connections, utility
 import json
 
-
+# factor in multiple connections
 
 class milvus_collection:
 
     collection = None
     conf = None
-    collection_loaded = False
 
     def __init__(self) -> None:
         with open('conf/config.json') as config_file:
@@ -38,9 +37,7 @@ class milvus_collection:
         return self.collection
     
     def load_collection(self):
-        if not self.collection_loaded:
-            self.collection.load()
-            self.collection_loaded = True
+        self.collection.load()
         return self.collection
     
     def drop_collection(self, collection_name):
