@@ -2,7 +2,7 @@
     "milvus_connection_name" : "qna_poc_test_7f3",
     "milvus_port" : 19530,
     "milvus_host" : "127.0.0.1",
-    "openai_api_key" : "sk-",
+    "openai_api_key" : "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",
     "generative_model_prompt" : "I have a document below. I want you to answer my question using it. Document: ",
-    "top_matching_chunks_as_context" : 3
+    "top_matching_chunks_as_context" : 1
 }

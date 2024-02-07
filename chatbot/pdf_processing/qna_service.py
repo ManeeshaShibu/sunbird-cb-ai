@@ -151,7 +151,7 @@ def generate_answers():
 
     generated_ans = generate_answer.openai_answer(query,answers_final)
 
-    return jsonify({'answers_final': generated_ans}), 200
+    return jsonify({'generated_ans': generated_ans, 'answers_final' : answers_final }), 200
 
 if __name__ == '__main__':
     print("running on 5000 port")
