@@ -15,11 +15,11 @@ from modules.text_processor import process_text
 import pandas as pd
 import json
 from modules.generative_model import answer_generation
+
 app = Flask(__name__)
 
 milvus = milvus_collection()
 text_processor = process_text()
-
 CONF = None
 with open('conf/config.json') as config_file:
     CONF = json.load(config_file)
@@ -105,7 +105,8 @@ def search_answers():
     print("Collection loaded.")
 
     # Encode the query
-    query_encode = text_processor.get_model().encode(query.lower())
+    clean_query = text_processor.clean_text(query)
+    query_encode = text_processor.get_model().encode(clean_query)
 
     # Perform a search to get answers
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
@@ -115,6 +116,10 @@ def search_answers():
     print(search_results)
     # Extract relevant information from search results
     answers_final = [search_results[0][i].entity.text for i in range(1,len(search_results[0]))]
+
+    #crude reranking
+    jaccard_closest_percentage = text_processor.jaccard_sim_list(clean_query, answers_final)
+    jaccard_closest = answers_final[jaccard_closest_percentage.index(max(jaccard_closest_percentage))]
 
     return jsonify({'answers_final': answers_final}), 200
 

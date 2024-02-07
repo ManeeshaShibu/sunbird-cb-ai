@@ -27,3 +27,9 @@ curl --location --request PUT 'localhost:5000/uploader' --form 'file=@"test.pdf"
 ## querying over ingested documents
 
 curl --location 'localhost:5000/search-answers' --header 'Content-Type: application/json' --data '{"query" : "query text goes here"}'
+
+# if error comes with topn :
+
+RUN pip install cython==0.29.36 numpy
+RUN pip install sparse_dot_topn==0.3.0 --no-cache-dir --no-build-isolation
+RUN pip install sparse-dot-topn-for-blocks --no-cache-dir --no-build-isolation

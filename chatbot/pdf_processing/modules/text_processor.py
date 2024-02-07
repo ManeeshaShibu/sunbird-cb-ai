@@ -22,6 +22,7 @@ class process_text:
         self.nlp = spacy.load("en_core_web_sm")
         self.model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
         self.coref_obj = coref_impl()
+        self.pdf_processor = process_pdf()
         pass
 
     def process(self, text):
@@ -40,28 +41,38 @@ class process_text:
         return clusters
 
     def clean_text(self, text):## logic for removing header and footer should be written here
-        return text
+        return self.pdf_processor.text_clean(text)
+    
+    def doc_signature(self, file):
+        name =  os.path.basename(file.name)
+        size = os.path.getsize(file.name)
+        return name + "_" + str(size)
 
     def extract_text_from_pdf(self, pdf_path):
         print('pdf processing started')
-        pdf_processor = process_pdf()
-        nlp = spacy.load("en_core_web_sm")
-        nlp.add_pipe(
-            "fastcoref",
-            config={'model_architecture': 'LingMessCoref', 'model_path': 'biu-nlp/lingmess-coref', 'device': 'cpu'}
-        )                
-        print("fastcoref pipeline loaded")
+                             
         with open(pdf_path, 'rb') as pdf_file:
             print(pdf_path)
-            pdf_content = pdf_processor.consume_pdf(pdf_path)
+            file_signature = self.doc_signature(pdf_file)
+            pdf_content = self.pdf_processor.consume_pdf(pdf_path)
             text_list = []
             embedding_list = []
             metadata_list = []
             print("resolving coref per page")
             for page in pdf_content['pages']:
-                
+                #cleanup
+                if page["is_outline"]:
+                    #skip the TOC pages
+                    continue
                 text = page['text'].strip()
-                #print(text)
+                if page['header']:
+                    text = text.replace(page['header'], ' ')
+                if page['footer']:
+                    text = text.replace(page['footer'], ' ')
+                if len(text.strip())<1:
+                    continue
+
+                print(page["page_num"])
                 print(len(text))
                 pagenum = page["page_num"]
                 try:
@@ -71,20 +82,18 @@ class process_text:
                     if len(text) <= 1300:
                         print("**************text len in page smaller than 1300")
                         
-                        metadata = {"doc_pagenum" : pagenum}
+                        metadata = {"doc_pagenum" : pagenum, "doc_name" : os.path.basename(pdf_file.name), "doc_signature" : file_signature}
                         text_list.append(text)
                         # print(text)
                         embeddings = self.model.encode(text)
                         embedding_list.append(embeddings)
                         metadata_list.append(metadata)
-                        print("page[page_num]")
                     else:
                         print("**************calling large text processor")
                         self.process_large_text(text, pdf_path, pagenum, text_list, embedding_list, metadata_list)
 
                 except Exception as e:
-                    print(e)
-                    pass
+                    print("Error:" + str(e))
         
 
         print('pdf processing complete')
@@ -98,7 +107,7 @@ class process_text:
         clusters = self.cluster_text(sentences, sentence_embeddings, threshold)
 
         for cluster in clusters:
-            cluster_txt = self.clean_text(' '.join([str(sentences[i]) for i in cluster]))
+            cluster_txt =' '.join([str(sentences[i]) for i in cluster])
             cluster_len = len(cluster_txt)
             # print("*************")
             # print(cluster_len)
@@ -114,6 +123,9 @@ class process_text:
                 embeddings = self.model.encode(cluster_txt)
                 embedding_list.append(embeddings)
                 metadata_list.append(metadata)
+
+    def jaccard_sim_list(self, source_text, terget_text_list):
+        return self.pdf_processor.most_similar_of_list_jaccard(source_text, terget_text_list)
 
     def get_model(self):
         return self.model

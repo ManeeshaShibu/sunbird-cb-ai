@@ -1,8 +1,8 @@
 {
-    "milvus_connection_name" : "qna_poc_test_local",
+    "milvus_connection_name" : "qna_poc_test_7f3",
     "milvus_port" : 19530,
-    "milvus_host" : "localhost",
-    "openai_api_key" : "sk-evkiq8P7OeuDOe9zSHOkp",
+    "milvus_host" : "127.0.0.1",
+    "openai_api_key" : "sk-",
     "generative_model_prompt" : "I have a document below. I want you to answer my question using it. Document: ",
     "top_matching_chunks_as_context" : 3
 }

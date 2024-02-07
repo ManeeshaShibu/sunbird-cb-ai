@@ -14,7 +14,7 @@ import pandas as pd
 
 from modules.pdfminer_util import pdfminer_impl
 import io
-
+import re
 
 class process_pdf:
 
@@ -63,10 +63,15 @@ class process_pdf:
                 
                 if isinstance(element, LTTextContainer) and element.get_text() and not element.get_text().isspace():
                     #print("----------------------------")
-                    text_set.add(element.get_text())
+                    text_set.add(self.text_clean(element.get_text()))
             text_list.extend(list(text_set))
         self.total_text =  text_list
 
+    def text_clean(self, text):
+        text = text.lower()
+        #text = re.sub("\-([a-zA-Z]+)", r"\1", text)
+        return text
+        
     def possible_header_footer(self):
         pagenum_thresh_percent = 90
         pdf_min_pages_with_footer_header = math.floor((self.pagenum*pagenum_thresh_percent)/100)
@@ -113,20 +118,25 @@ class process_pdf:
     def pdf_to_text(self, pdf_file):
         #extract text from pdf file and return
         pdf_to_txt = pdfminer_impl()
-        return pdf_to_txt.extract_text_without_images_and_tables(pdf_file)
+        output = pdf_to_txt.extract_text_without_images_and_tables(pdf_file)
+        return self.text_clean(output)
     
     def get_if_header(self, content):
         lines = self.get_text_lines(content)
-        similarity_perc = [td.jaccard.normalized_similarity(lines[0], s) for s in self.possible_header_footer()]
+        similarity_perc = self.most_similar_of_list_jaccard(lines[0], lines)
 
         if len(lines)>0 and len(similarity_perc)>0 and max(similarity_perc) > 0.8:
             return lines[0]
         else:
             return None
-        
+    
+    def most_similar_of_list_jaccard(self, text, target_list):
+        similarity_perc = [td.jaccard.normalized_similarity(text, s) for s in target_list]
+        return similarity_perc
+
     def get_if_footer(self, content):
         lines = self.get_text_lines(content)
-        similarity_perc = [td.jaccard.normalized_similarity(lines[-1], s) for s in self.possible_header_footer()]
+        similarity_perc = self.most_similar_of_list_jaccard(lines[-1], lines)
         
         if len(lines)>0 and len(similarity_perc)>0 and max(similarity_perc) > 0.8:
             return lines[-1]
