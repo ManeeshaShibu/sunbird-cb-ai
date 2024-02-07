@@ -41,9 +41,9 @@ generate_answer = answer_generation()
 def index():
     return 'Welcome to the PDF Ingestion API!'
 
-@app.route('/uploader', methods = ['PUT'])
+@app.route('/uploader', methods = ['POST'])
 def upload_file():
-   if request.method == 'PUT':
+   if request.method == 'POST':
       file = request.files['file']
 
    collection = milvus.get_collection()
