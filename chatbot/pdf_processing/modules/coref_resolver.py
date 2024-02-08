@@ -21,4 +21,4 @@ class coref_impl:
         return text
     
 
-print(coref_impl().fastcoref_impl("jack and jill went up the hill. jack started crying. he was sad"))
+#print(coref_impl().fastcoref_impl("jack and jill went up the hill. jack started crying. he was sad"))

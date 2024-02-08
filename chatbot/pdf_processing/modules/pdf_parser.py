@@ -123,9 +123,11 @@ class process_pdf:
     
     def get_if_header(self, content):
         lines = self.get_text_lines(content)
+        if len(lines)<1:
+            return None
         similarity_perc = self.most_similar_of_list_jaccard(lines[0], lines)
 
-        if len(lines)>0 and len(similarity_perc)>0 and max(similarity_perc) > 0.8:
+        if len(similarity_perc)>0 and max(similarity_perc) > 0.8:
             return lines[0]
         else:
             return None
@@ -136,9 +138,12 @@ class process_pdf:
 
     def get_if_footer(self, content):
         lines = self.get_text_lines(content)
+        if len(lines)<1:
+            return None
+        lines = self.get_text_lines(content)
         similarity_perc = self.most_similar_of_list_jaccard(lines[-1], lines)
         
-        if len(lines)>0 and len(similarity_perc)>0 and max(similarity_perc) > 0.8:
+        if len(similarity_perc)>0 and max(similarity_perc) > 0.8:
             return lines[-1]
         else:
             return None
