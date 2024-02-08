@@ -42,6 +42,10 @@ class milvus_collection:
     
     def drop_collection(self, collection_name):
         utility.drop_collection(collection_name)
+        return "dropped " + collection_name
+    
+    def get_collections(self):
+        return utility.list_collections()
 
     
  

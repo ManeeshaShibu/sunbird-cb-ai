@@ -41,6 +41,17 @@ generate_answer = answer_generation()
 def index():
     return 'Welcome to the PDF Ingestion API!'
 
+@app.route('/drop/collecion', methods = ['POST'])
+def drop_collection():
+    data = request.get_json()
+    #collection_name = data.get('collection_name', '')
+    collection = data.get('collection_name', '')
+    return milvus.drop_collection(collection)
+
+@app.route('/get/collecions')
+def get_collection():
+    return milvus.get_collections()
+
 @app.route('/uploader', methods = ['POST'])
 def upload_file():
    if request.method == 'POST':
@@ -112,15 +123,19 @@ def search_answers():
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
-                                      limit=10, consistency_level="Strong")
-    print(search_results)
+                                      limit=CONF["milvus_top_n_results"], consistency_level="Strong")
+    #print(search_results)
     # Extract relevant information from search results
-    answers_final = [search_results[0][i].entity.text for i in range(1,len(search_results[0]))]
+    answers_final = []
+    for result in search_results:
+        for r in result:
+            answers_final.append(r.entity.text)
+
 
     #crude reranking
     jaccard_closest_percentage = text_processor.jaccard_sim_list(clean_query, answers_final)
     jaccard_closest = answers_final[jaccard_closest_percentage.index(max(jaccard_closest_percentage))]
-
+    print(jaccard_closest)
     return jsonify({'answers_final': answers_final}), 200
 
 @app.route('/generate-answers', methods=['POST'])
@@ -145,9 +160,13 @@ def generate_answers():
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
                                       limit=10, consistency_level="Strong")
-    print(search_results)
+    #print(search_results)
     # Extract relevant information from search results
-    answers_final = [search_results[0][i].entity.text for i in range(1,len(search_results[0]))]
+    answers_final = []
+    for result in search_results:
+        for r in result:
+            answers_final.append(r.entity.text)
+
 
     generated_ans = generate_answer.openai_answer(query,answers_final)
 
