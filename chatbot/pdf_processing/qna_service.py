@@ -60,16 +60,20 @@ def upload_file():
    collection = milvus.get_collection()
 
 
-   if file and file.filename.endswith(".pdf"):
+   if file:
 
         uploaded_file_path = os.path.join("upload_folder", file.filename)
         print(uploaded_file_path)
         file.save((uploaded_file_path))
         print('staged file locally: ' + str(file.filename))
-        
+        text_list = []
+        embedding_list = []
+        metadata_list = []
         # Extract text and metadata from the PDF
-        text_list, embedding_list, metadata_list = text_processor.extract_text_from_pdf(uploaded_file_path)
-
+        if file.filename.endswith(".pdf"):
+            text_list, embedding_list, metadata_list = text_processor.extract_text_from_pdf(uploaded_file_path)
+        elif file.filename.endswith(".mp4"):
+            text_list, embedding_list, metadata_list = text_processor.extract_text_from_video(file.filename,uploaded_file_path)
         # Insert data into Milvus collection
         print('inseritng into collection')
         #    schema = CollectionSchema(fields=[document_id, metadata, metadata_page, embeddings, text], enable_dynamic_field=True)
@@ -78,8 +82,8 @@ def upload_file():
         df.to_csv('check_text.csv')
     
         print(len(embedding_list))
-        print(text_list)
-        print(metadata_list)
+        print(len(text_list))
+        print(len(metadata_list))
         collection.insert([ embedding_list, text_list, metadata_list])
         
         # Create an index on the "embeddings" field
@@ -124,18 +128,18 @@ def search_answers():
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
                                       limit=CONF["milvus_top_n_results"], consistency_level="Strong")
-    #print(search_results)
+    print(search_results)
     # Extract relevant information from search results
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append(r.entity.text)
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
 
 
     #crude reranking
-    jaccard_closest_percentage = text_processor.jaccard_sim_list(clean_query, answers_final)
-    jaccard_closest = answers_final[jaccard_closest_percentage.index(max(jaccard_closest_percentage))]
-    print(jaccard_closest)
+    #jaccard_closest_percentage = text_processor.jaccard_sim_list(clean_query, answers_final)
+    #jaccard_closest = answers_final[jaccard_closest_percentage.index(max(jaccard_closest_percentage))]
+    #print(jaccard_closest)
     return jsonify({'answers_final': answers_final}), 200
 
 @app.route('/generate-answers', methods=['POST'])
@@ -170,7 +174,7 @@ def generate_answers():
 
     generated_ans = generate_answer.openai_answer(query,answers_final)
 
-    return jsonify({'generated_ans': generated_ans, 'answers_final' : answers_final }), 200
+    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:CONF['top_matching_chunks_as_context']] }), 200
 
 if __name__ == '__main__':
     print("running on 5000 port")

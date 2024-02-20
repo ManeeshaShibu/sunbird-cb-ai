@@ -8,15 +8,16 @@ class answer_generation:
         with open('conf/config.json') as config_file:
             self.conf = json.load(config_file)
         self.client = OpenAI(
-        api_key='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',
+        api_key=self.conf['openai_api_key'],
         )
 
 
     def openai_answer(self, query, context):
-        context_count = len(context) 
-        if context_count > self.conf["top_matching_chunks_as_context"]:
-            context_count = self.conf["top_matching_chunks_as_context"]
-        prompt= self.conf["generative_model_prompt"] + ' '.join(context[:context_count]) +". My Question is:" + query
+        context_count = len(context)
+        if self.conf['top_matching_chunks_as_context'] < context_count:
+             context_count = self.conf['top_matching_chunks_as_context']
+        prompt = self.conf['generative_model_prompt']
+        prompt= prompt + ' '.join(context[:context_count]) +"}. Now answer my Question which is:" + query
         print(prompt)
         chat_completion = self.client.chat.completions.create(
             messages=[
@@ -27,10 +28,7 @@ class answer_generation:
             ],
             model="gpt-3.5-turbo",
         )
-        print(chat_completion)
-        if not chat_completion.choices==[]:
-            return "We couldn't find any answer for the question"
-        
         return chat_completion.choices[0].message.content
-    
+
+        
     

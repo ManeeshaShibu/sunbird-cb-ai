@@ -15,9 +15,13 @@ from modules.coref_resolver import coref_impl
 from repo.milvus_entity import milvus_collection
 import pandas as pd
 import json
+import assemblyai as aai
+import numpy as np
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
+
 
 class process_text:
-
+    cluster_len=0
     def __init__(self) -> None:
         self.nlp = spacy.load("en_core_web_sm")
         self.model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
@@ -52,8 +56,9 @@ class process_text:
         print('pdf processing started')
                              
         with open(pdf_path, 'rb') as pdf_file:
-            print(pdf_path)
             file_signature = self.doc_signature(pdf_file)
+            print(pdf_path)
+            
             pdf_content = self.pdf_processor.consume_pdf(pdf_path)
             text_list = []
             embedding_list = []
@@ -90,13 +95,73 @@ class process_text:
                         metadata_list.append(metadata)
                     else:
                         print("**************calling large text processor")
-                        self.process_large_text(text, pdf_path, pagenum, text_list, embedding_list, metadata_list)
+                        text_list = self.process_large_text(text, pdf_path, pagenum, text_list, embedding_list, metadata_list)
+                        for text_chunk in text_list:
+                            metadata = {"doc_pagenum" : pagenum}
+                            embeddings = self.model.encode(text_chunk)
+                            embedding_list.append(embeddings)
+                            metadata_list.append(metadata)
+
 
                 except Exception as e:
                     print("Error:" + str(e))
         
 
         print('pdf processing complete')
+        print()
+        return text_list, embedding_list, metadata_list
+    
+    def extract_text_from_video(self,file_name, video_path):
+        print('video processing started')
+                             
+        aai.settings.api_key = "9bd4c3b823fd42ad9135fb8c8c0b7670"
+        transcriber = aai.Transcriber()
+        transcript = transcriber.transcribe(video_path)
+        
+        text_list = []
+        embedding_list = []
+        metadata_list = []
+        print("resolving coref per page")
+        
+        text = transcript.text.strip()
+        print(text)
+        def gen():
+            n=0
+            while True:
+                yield n                
+                n+=1
+        page=gen()
+                
+        print(len(text))
+        pagenum = next(page)
+        try:
+            text = self.coref_obj.fastcoref_impl(text)
+            # print(text)
+
+            if len(text) <= 1300:
+                print("**************text len in page smaller than 1300")
+                
+                metadata = {"doc_pagenum" : pagenum, "doc_name" : os.path.basename(file_name.name)}
+                text_list.append(text)
+                # print(text)
+                embeddings = self.model.encode(text)
+                embedding_list.append(embeddings)
+                metadata_list.append(metadata)
+            else:
+                print("**************calling large text processor")
+                text_list = self.process_large_text(text, video_path, pagenum, text_list, embedding_list, metadata_list)
+                print("$$$$$$$$$$$" + str(len(text_list)))
+                for text_chunk in text_list:
+                    metadata = {"doc_pagenum" : pagenum}
+                    embeddings = self.model.encode(text_chunk)
+                    embedding_list.append(embeddings)
+                    metadata_list.append(metadata)
+
+        except Exception as e:
+            print("Error:" + str(e))
+        
+
+        print('video processing complete')
         print()
         return text_list, embedding_list, metadata_list
 
@@ -107,25 +172,54 @@ class process_text:
         clusters = self.cluster_text(sentences, sentence_embeddings, threshold)
 
         for cluster in clusters:
+
             cluster_txt =' '.join([str(sentences[i]) for i in cluster])
             cluster_len = len(cluster_txt)
+            
             # print("*************")
             # print(cluster_len)
 
             if cluster_len < 80:
+                #add to next cluster
                 continue
-            elif cluster_len > 1300:
+            elif cluster_len > 1300 and self.cluster_len!=cluster_len:
+                self.cluster_len=cluster_len
                 threshold = 0.6
+                # print(cluster_txt, text_list)
+                
                 self.process_large_text(cluster_txt, pdf_path, pagenum, text_list, embedding_list, metadata_list)
             else:
-                metadata = {"doc_pagenum" : pagenum}
                 text_list.append(cluster_txt)
-                embeddings = self.model.encode(cluster_txt)
-                embedding_list.append(embeddings)
-                metadata_list.append(metadata)
+        text_list = self.handle_lerge_chunks(text_list)
+        #for text_chunk in text_list:
+        #    metadata = {"doc_pagenum" : pagenum}
+        #    embeddings = self.model.encode(text_chunk)
+        #    embedding_list.append(embeddings)
+        #    metadata_list.append(metadata)
+            
+        self.cluster_len=0
+        return text_list
 
     def jaccard_sim_list(self, source_text, terget_text_list):
         return self.pdf_processor.most_similar_of_list_jaccard(source_text, terget_text_list)
+
+    def handle_lerge_chunks(self, chunks):
+        print("handling lerger chunks^^^^^^^^^")
+        print(len(chunks))
+        chunk_size = 1300
+        chunk_overlap = 300
+        r_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
+        smaller_chunks = []
+        for chunk in chunks:
+            if len(chunk)>1300:
+                print("big chunk intercepted^^^^^^^^^: " + str(len(chunk)))
+                smaller_chunks.extend(r_splitter.split_text(chunk))
+            else:
+                smaller_chunks.append(chunk)
+        print("returning smaller chunks____________")
+        print(len(smaller_chunks))
+        print(json.dumps(smaller_chunks))
+        return smaller_chunks
 
     def get_model(self):
         return self.model
