@@ -15,11 +15,14 @@ from modules.text_processor import process_text
 import pandas as pd
 import json
 from modules.generative_model import answer_generation
+from sentence_transformers import SentenceTransformer
 
 app = Flask(__name__)
 
+nlp_model = spacy.load("en_core_web_sm")
+transformer_model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
+text_processor_preloaded = process_text(nlp_model, transformer_model)
 milvus = milvus_collection()
-text_processor = process_text()
 CONF = None
 with open('conf/config.json') as config_file:
     CONF = json.load(config_file)
@@ -54,6 +57,7 @@ def get_collection():
 
 @app.route('/uploader', methods = ['POST'])
 def upload_file():
+   text_processor = process_text(nlp_model, transformer_model)
    if request.method == 'POST':
       file = request.files['file']
 
@@ -120,8 +124,8 @@ def search_answers():
     print("Collection loaded.")
 
     # Encode the query
-    clean_query = text_processor.clean_text(query)
-    query_encode = text_processor.get_model().encode(clean_query)
+    clean_query = text_processor_preloaded.clean_text(query)
+    query_encode = text_processor_preloaded.get_model().encode(clean_query)
 
     # Perform a search to get answers
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
@@ -157,7 +161,7 @@ def generate_answers():
     print("Collection loaded.")
 
     # Encode the query
-    query_encode = text_processor.get_model().encode(query.lower())
+    query_encode = text_processor_preloaded.get_model().encode(query.lower())
 
     # Perform a search to get answers
     search_results = collection.search(data=[query_encode], anns_field="embeddings",

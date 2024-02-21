@@ -21,12 +21,13 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTex
 
 
 class process_text:
-    cluster_len=0
-    def __init__(self) -> None:
-        self.nlp = spacy.load("en_core_web_sm")
-        self.model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
+    start_word=""
+    def __init__(self, nlp_model, transformer_model) -> None:
+        self.nlp = nlp_model
+        self.model = transformer_model
         self.coref_obj = coref_impl()
         self.pdf_processor = process_pdf()
+        self.buffer_text = []
         pass
 
     def process(self, text):
@@ -181,15 +182,23 @@ class process_text:
 
             if cluster_len < 80:
                 #add to next cluster
+                self.buffer_text.append(cluster_txt)
                 continue
-            elif cluster_len > 1300 and self.cluster_len!=cluster_len:
+            elif cluster_len > 1300 and cluster_txt.startswith(self.start_word)== False:
                 self.cluster_len=cluster_len
                 threshold = 0.6
                 # print(cluster_txt, text_list)
+                self.start_word=""
+            
+                self.start_word= cluster_txt[:10]
                 
                 self.process_large_text(cluster_txt, pdf_path, pagenum, text_list, embedding_list, metadata_list)
             else:
+                if self.buffer_text:
+                    cluster_txt = ".".join(self.buffer_text) + "." + cluster_txt
+                    self.buffer_text = []
                 text_list.append(cluster_txt)
+        self.start_word=""
         text_list = self.handle_lerge_chunks(text_list)
         #for text_chunk in text_list:
         #    metadata = {"doc_pagenum" : pagenum}
@@ -197,7 +206,6 @@ class process_text:
         #    embedding_list.append(embeddings)
         #    metadata_list.append(metadata)
             
-        self.cluster_len=0
         return text_list
 
     def jaccard_sim_list(self, source_text, terget_text_list):
