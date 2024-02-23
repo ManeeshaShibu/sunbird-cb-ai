@@ -20,20 +20,23 @@ import numpy as np
 from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 
 
-class process_text:
+class process_text(coref_impl):
     start_word=""
     def __init__(self, nlp_model, transformer_model) -> None:
         self.nlp = nlp_model
         self.model = transformer_model
-        self.coref_obj = coref_impl()
-        self.pdf_processor = process_pdf()
+        self.coref_obj = coref_impl()        
+        self.pdf_processor = process_pdf()        
         self.buffer_text = []
         pass
 
     def process(self, text):
+        print("in process_text")        
         doc = self.nlp(text)
         sentences = list(doc.sents)
+        sentences=[sent for sent in sentences if len(sent)>15 ]### added to remove sentence having length less than 15 characters
         sentence_embeddings = self.model.encode(sentences, convert_to_tensor=True)
+        print("completed_process")
         return sentences, sentence_embeddings
 
     def cluster_text(self, sentences, sentence_embeddings, threshold):
@@ -58,8 +61,12 @@ class process_text:
                              
         with open(pdf_path, 'rb') as pdf_file:
             file_signature = self.doc_signature(pdf_file)
-            print(pdf_path)
+            # print(pdf_path)
+            # print(pdf_file)
             
+            print("***********************")
+            file_name=pdf_path.split("\\")[-1]
+            # print(file_name)
             pdf_content = self.pdf_processor.consume_pdf(pdf_path)
             text_list = []
             embedding_list = []
@@ -87,9 +94,10 @@ class process_text:
 
                     if len(text) <= 1300:
                         print("**************text len in page smaller than 1300")
-                        
-                        metadata = {"doc_pagenum" : pagenum, "doc_name" : os.path.basename(pdf_file.name), "doc_signature" : file_signature}
+                        # print(type(pdf_file))
+                        metadata = {"doc_pagenum" : pagenum, "doc_name" : file_name, "doc_signature" : file_signature}
                         text_list.append(text)
+                        # print(file_name)
                         # print(text)
                         embeddings = self.model.encode(text)
                         embedding_list.append(embeddings)
@@ -107,7 +115,7 @@ class process_text:
                 except Exception as e:
                     print("Error:" + str(e))
         
-
+        print(file_name)
         print('pdf processing complete')
         print()
         return text_list, embedding_list, metadata_list
@@ -141,9 +149,12 @@ class process_text:
 
             if len(text) <= 1300:
                 print("**************text len in page smaller than 1300")
-                
-                metadata = {"doc_pagenum" : pagenum, "doc_name" : os.path.basename(file_name.name)}
+                print(type(file_name))
+                print(file_name)
+                metadata = {"doc_pagenum" : pagenum, "doc_name" : file_name}
+                # metadata = {"doc_pagenum" : pagenum}
                 text_list.append(text)
+                # print(file_name)
                 # print(text)
                 embeddings = self.model.encode(text)
                 embedding_list.append(embeddings)
@@ -161,7 +172,7 @@ class process_text:
         except Exception as e:
             print("Error:" + str(e))
         
-
+        print(file_name)
         print('video processing complete')
         print()
         return text_list, embedding_list, metadata_list
@@ -171,20 +182,22 @@ class process_text:
         threshold = 0.3
         sentences, sentence_embeddings = self.process(text)
         clusters = self.cluster_text(sentences, sentence_embeddings, threshold)
-
+        print(clusters, sentences)
         for cluster in clusters:
 
             cluster_txt =' '.join([str(sentences[i]) for i in cluster])
             cluster_len = len(cluster_txt)
             
             # print("*************")
-            # print(cluster_len)
+            print(cluster_len)
 
             if cluster_len < 80:
+                print("in if_statement")
                 #add to next cluster
                 self.buffer_text.append(cluster_txt)
                 continue
             elif cluster_len > 1300 and cluster_txt.startswith(self.start_word)== False:
+                print("in elif_statement")
                 self.cluster_len=cluster_len
                 threshold = 0.6
                 # print(cluster_txt, text_list)
@@ -194,10 +207,12 @@ class process_text:
                 
                 self.process_large_text(cluster_txt, pdf_path, pagenum, text_list, embedding_list, metadata_list)
             else:
+                print("in else_statement")
                 if self.buffer_text:
                     cluster_txt = ".".join(self.buffer_text) + "." + cluster_txt
                     self.buffer_text = []
                 text_list.append(cluster_txt)
+        print("going in handle_large_chunks function")
         self.start_word=""
         text_list = self.handle_lerge_chunks(text_list)
         #for text_chunk in text_list:
