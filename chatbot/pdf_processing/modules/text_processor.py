@@ -78,10 +78,10 @@ class process_text(coref_impl):
                     #skip the TOC pages
                     continue
                 text = page['text'].strip()
-                if page['header']:
-                    text = text.replace(page['header'], ' ')
-                if page['footer']:
-                    text = text.replace(page['footer'], ' ')
+                # if page['header']:
+                #     text = text.replace(page['header'], ' ')
+                # if page['footer']:
+                #     text = text.replace(page['footer'], ' ')
                 if len(text.strip())<1:
                     continue
 
@@ -104,13 +104,13 @@ class process_text(coref_impl):
                         metadata_list.append(metadata)
                     else:
                         print("**************calling large text processor")
-                        text_list = self.process_large_text(text, pdf_path, pagenum, text_list, embedding_list, metadata_list)
-                        for text_chunk in text_list:
+                        txt_list = self.process_large_text(text, pdf_path, pagenum, text_list, embedding_list, metadata_list)
+                        for text_chunk in txt_list:
                             metadata = {"doc_pagenum" : pagenum}
                             embeddings = self.model.encode(text_chunk)
                             embedding_list.append(embeddings)
                             metadata_list.append(metadata)
-
+                            text_list.append(text_chunk) #### added
 
                 except Exception as e:
                     print("Error:" + str(e))
@@ -183,6 +183,7 @@ class process_text(coref_impl):
         sentences, sentence_embeddings = self.process(text)
         clusters = self.cluster_text(sentences, sentence_embeddings, threshold)
         print(clusters, sentences)
+        temp_text_list=[]
         for cluster in clusters:
 
             cluster_txt =' '.join([str(sentences[i]) for i in cluster])
@@ -211,17 +212,17 @@ class process_text(coref_impl):
                 if self.buffer_text:
                     cluster_txt = ".".join(self.buffer_text) + "." + cluster_txt
                     self.buffer_text = []
-                text_list.append(cluster_txt)
+                temp_text_list.append(cluster_txt)
         print("going in handle_large_chunks function")
         self.start_word=""
-        text_list = self.handle_lerge_chunks(text_list)
+        seperated_text_list = self.handle_lerge_chunks(temp_text_list) ## added new variable name "seperated_text_list" and new "list temp_text_list"
         #for text_chunk in text_list:
         #    metadata = {"doc_pagenum" : pagenum}
         #    embeddings = self.model.encode(text_chunk)
         #    embedding_list.append(embeddings)
         #    metadata_list.append(metadata)
             
-        return text_list
+        return seperated_text_list## added new variable name
 
     def jaccard_sim_list(self, source_text, terget_text_list):
         return self.pdf_processor.most_similar_of_list_jaccard(source_text, terget_text_list)
