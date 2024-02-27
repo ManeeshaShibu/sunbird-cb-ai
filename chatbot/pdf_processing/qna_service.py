@@ -16,6 +16,7 @@ import pandas as pd
 import json
 from modules.generative_model import answer_generation
 from sentence_transformers import SentenceTransformer
+import gc
 
 app = Flask(__name__)
 
@@ -23,6 +24,7 @@ nlp_model = spacy.load("en_core_web_sm")
 transformer_model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
 text_processor_preloaded = process_text(nlp_model, transformer_model)
 milvus = milvus_collection()
+print("start")
 CONF = None
 with open('conf/config.json') as config_file:
     CONF = json.load(config_file)
@@ -57,15 +59,17 @@ def get_collection():
 
 @app.route('/uploader', methods = ['POST'])
 def upload_file():
-   text_processor = process_text(nlp_model, transformer_model)
-   if request.method == 'POST':
-      file = request.files['file']
+    print("in upload_file")
+    text_processor = process_text(nlp_model, transformer_model)
+    print("after text_processing")
+    if request.method == 'POST':
+        file = request.files['file']
+        print("##########")
+    collection = milvus.get_collection()
 
-   collection = milvus.get_collection()
 
-
-   if file:
-
+    if file:
+        print(file)
         uploaded_file_path = os.path.join("upload_folder", file.filename)
         print(uploaded_file_path)
         file.save((uploaded_file_path))
@@ -77,6 +81,7 @@ def upload_file():
         if file.filename.endswith(".pdf"):
             text_list, embedding_list, metadata_list = text_processor.extract_text_from_pdf(uploaded_file_path)
         elif file.filename.endswith(".mp4"):
+            print("@@@@@@@@@@@")
             text_list, embedding_list, metadata_list = text_processor.extract_text_from_video(file.filename,uploaded_file_path)
         # Insert data into Milvus collection
         print('inseritng into collection')
@@ -84,7 +89,7 @@ def upload_file():
         df = pd.DataFrame()
         df['text_list'] = text_list
         df.to_csv('check_text.csv')
-    
+
         print(len(embedding_list))
         print(len(text_list))
         print(len(metadata_list))
@@ -100,14 +105,17 @@ def upload_file():
         collection.create_index(field_name="embeddings", index_params=index_params)
         print('Index created.')
 
-         #loads collection if not loaded already
+            #loads collection if not loaded already
         milvus.load_collection()
         #remove staged file - add try except for all I/O
         os.remove(uploaded_file_path)
+        del file
+        del text_processor
+        gc.collect()
 
         return jsonify({'message': 'Data inserted into the collection.'}), 200
 
-   return jsonify({'error': 'Invalid file format'}), 400
+    return jsonify({'error': 'Invalid file format'}), 400
 
 @app.route('/search-answers', methods=['POST'])
 def search_answers():
