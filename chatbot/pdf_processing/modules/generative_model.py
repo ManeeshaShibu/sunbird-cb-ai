@@ -8,15 +8,16 @@ class answer_generation:
         with open('conf/config.json') as config_file:
             self.conf = json.load(config_file)
         self.client = OpenAI(
-        api_key=self.conf['openai_api_key'],
+        api_key=os.getenv('openai_api_key', self.conf["openai_api_key"]),
         )
 
 
     def openai_answer(self, query, context):
         context_count = len(context)
-        if self.conf['top_matching_chunks_as_context'] < context_count:
-             context_count = self.conf['top_matching_chunks_as_context']
-        prompt = self.conf['generative_model_prompt']
+        top_context_chunk_count = os.getenv('top_matching_chunks_as_context', self.conf["top_matching_chunks_as_context"])
+        if top_context_chunk_count < context_count:
+             context_count = top_context_chunk_count
+        prompt = os.getenv('generative_model_prompt', self.conf["generative_model_prompt"])
         prompt= prompt + ' '.join(context[:context_count]) +"}. Now answer my Question which is:" + query
         print(prompt)
         chat_completion = self.client.chat.completions.create(

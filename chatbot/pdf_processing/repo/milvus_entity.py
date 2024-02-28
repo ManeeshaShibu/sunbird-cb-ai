@@ -1,7 +1,7 @@
 
 from pymilvus import CollectionSchema, FieldSchema, DataType, Collection, connections, utility
 import json
-
+import os
 # factor in multiple connections
 
 class milvus_collection:
@@ -12,8 +12,8 @@ class milvus_collection:
     def __init__(self) -> None:
         with open('conf/config.json') as config_file:
             self.conf = json.load(config_file)
-        connections.connect(host=self.conf["milvus_host"], port=self.conf["milvus_port"])
-        self.define_collection(self.conf["milvus_connection_name"])
+        connections.connect(host=os.getenv('milvus_host', self.conf["milvus_host"]), port=os.getenv('milvus_port', self.conf["milvus_port"]))
+        self.define_collection(os.getenv('milvus_collection_name', self.conf["milvus_collection_name"]))
         print('Connected to Milvus!')
 
     def define_collection(self, collection_name):

@@ -78,10 +78,10 @@ class process_text(coref_impl):
                     #skip the TOC pages
                     continue
                 text = page['text'].strip()
-                # if page['header']:
-                #     text = text.replace(page['header'], ' ')
-                # if page['footer']:
-                #     text = text.replace(page['footer'], ' ')
+                if page['header']:
+                    text = text.replace(page['header'], ' ')
+                if page['footer']:
+                    text = text.replace(page['footer'], ' ')
                 if len(text.strip())<1:
                     continue
 

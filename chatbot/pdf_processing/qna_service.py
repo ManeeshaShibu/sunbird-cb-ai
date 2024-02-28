@@ -111,6 +111,10 @@ def upload_file():
         os.remove(uploaded_file_path)
         del file
         del text_processor
+        del embedding_list
+        del text_list
+        del metadata_list
+        del collection
         gc.collect()
 
         return jsonify({'message': 'Data inserted into the collection.'}), 200
@@ -122,7 +126,7 @@ def search_answers():
     data = request.get_json()
     print(data)
     #collection_name = data.get('collection_name', '')
-    collection_name = CONF["milvus_connection_name"]
+    collection_name = os.getenv('milvus_collection_name', CONF["milvus_collection_name"])
     query = data.get('query', '')
     print(collection_name)
     print(query)
@@ -139,7 +143,7 @@ def search_answers():
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
-                                      limit=CONF["milvus_top_n_results"], consistency_level="Strong")
+                                      limit=os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"]), consistency_level="Strong")
     print(search_results)
     # Extract relevant information from search results
     answers_final = []
@@ -159,7 +163,7 @@ def generate_answers():
     data = request.get_json()
     print(data)
     #collection_name = data.get('collection_name', '')
-    collection_name = CONF["milvus_connection_name"]
+    collection_name = os.getenv('milvus_collection_name', CONF["milvus_collection_name"])
     query = data.get('query', '')
     print(collection_name)
     print(query)
@@ -186,7 +190,7 @@ def generate_answers():
 
     generated_ans = generate_answer.openai_answer(query,answers_final)
 
-    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:CONF['top_matching_chunks_as_context']] }), 200
+    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"])] }), 200
 
 if __name__ == '__main__':
     print("running on 5000 port")
