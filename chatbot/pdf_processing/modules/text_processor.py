@@ -19,6 +19,10 @@ import assemblyai as aai
 import numpy as np
 from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 
+CONF = None
+with open('conf/config.json') as config_file:
+    CONF = json.load(config_file)
+
 
 class process_text(coref_impl):
     start_word=""
@@ -91,8 +95,10 @@ class process_text(coref_impl):
                 try:
                     text = self.coref_obj.fastcoref_impl(text)
                     # print(text)
+                    if len(text) <=  os.getenv('min_chunk_len', CONF["min_chunk_len"]):
+                        continue
 
-                    if len(text) <= 1300:
+                    elif len(text) <= 1300:
                         print("**************text len in page smaller than 1300")
                         # print(type(pdf_file))
                         metadata = {"doc_pagenum" : pagenum, "doc_name" : file_name, "doc_signature" : file_signature}
