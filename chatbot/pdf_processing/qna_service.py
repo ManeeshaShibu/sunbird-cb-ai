@@ -65,7 +65,7 @@ def upload_file():
     if request.method == 'POST':
         file = request.files['file']
         print("##########")
-    collection = milvus.get_collection()
+    collection, priority_collection = milvus.get_collection()
 
 
     if file:
@@ -121,6 +121,49 @@ def upload_file():
 
     return jsonify({'error': 'Invalid file format'}), 400
 
+@app.route('/ingest', methods = ['POST'])
+def ingest_content():
+    data = request.get_json()
+    print(data)
+    #collection_name = data.get('collection_name', '')
+    query = data.get('content', '')
+    info = data.get('info', '')
+    collection, priority_collection = milvus.get_collection()
+    text_processor = process_text(nlp_model, transformer_model)
+    text_list, embedding_list, metadata_list = text_processor.ingest_text(query, info)
+    if len(text_list) > 0:
+        df = pd.DataFrame()
+        df['text_list'] = text_list
+        df.to_csv('check_text.csv')
+
+        print(len(embedding_list))
+        print(len(text_list))
+        print(len(metadata_list))
+        priority_collection.insert([ embedding_list, text_list, metadata_list])
+        
+        # Create an index on the "embeddings" field
+        index_params = {
+            'metric_type': 'L2',
+            'index_type': "HNSW",
+            'efConstruction': 40,
+            'M': 20
+        }
+        priority_collection.create_index(field_name="embeddings", index_params=index_params)
+        print('Index created.')
+
+            #loads collection if not loaded already
+        milvus.load_collection()
+        del text_processor
+        del embedding_list
+        del text_list
+        del metadata_list
+        del priority_collection
+        del collection
+        gc.collect()
+        return jsonify({'message': 'Data inserted into the collection.'}), 200
+    else:
+        return jsonify({'message': 'Empty chunks obtained'}), 400
+
 @app.route('/search-answers', methods=['POST'])
 def search_answers():
     data = request.get_json()
@@ -131,8 +174,9 @@ def search_answers():
     print(collection_name)
     print(query)
     # Define and load the Milvus collection
-    collection = milvus.get_collection()
+    collection, priority_collection = milvus.get_collection()
     collection.load()
+    priority_collection.load()
     print("Collection loaded.")
 
     # Encode the query
@@ -143,20 +187,29 @@ def search_answers():
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
-                                      limit=os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"]), consistency_level="Strong")
+                                      limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
+    priority_search_results = priority_collection.search(data=[query_encode], anns_field="embeddings",
+                                      param={"metric": "L2", "offset": 0},
+                                      output_fields=["metadata", "metadata_page", "text"],
+                                      limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
     print(search_results)
     # Extract relevant information from search results
     answers_final = []
+    priority_answer = []
     for result in search_results:
         for r in result:
             answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
+
+    for result in priority_search_results:
+        for r in result:
+            priority_answer.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
 
 
     #crude reranking
     #jaccard_closest_percentage = text_processor.jaccard_sim_list(clean_query, answers_final)
     #jaccard_closest = answers_final[jaccard_closest_percentage.index(max(jaccard_closest_percentage))]
     #print(jaccard_closest)
-    return jsonify({'answers_final': answers_final}), 200
+    return jsonify({'answers_final': answers_final, 'priority':priority_answer}), 200
 
 @app.route('/generate-answers', methods=['POST'])
 def generate_answers():
@@ -168,7 +221,7 @@ def generate_answers():
     print(collection_name)
     print(query)
     # Define and load the Milvus collection
-    collection = milvus.get_collection()
+    collection, priority_collection = milvus.get_collection()
     collection.load()
     print("Collection loaded.")
 

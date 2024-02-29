@@ -1,5 +1,6 @@
 {
     "milvus_collection_name" : "test2",
+    "milvus_priority_collection_name" : "priority",
     "milvus_port" : 19530,
     "milvus_host" : "127.0.0.1",
     "milvus_top_n_results" : 20,

@@ -62,7 +62,9 @@ class process_text(coref_impl):
 
     def extract_text_from_pdf(self, pdf_path):
         print('pdf processing started')
-                             
+        text_list = []
+        embedding_list = []
+        metadata_list = []                 
         with open(pdf_path, 'rb') as pdf_file:
             file_signature = self.doc_signature(pdf_file)
             # print(pdf_path)
@@ -72,9 +74,6 @@ class process_text(coref_impl):
             file_name=pdf_path.split("\\")[-1]
             # print(file_name)
             pdf_content = self.pdf_processor.consume_pdf(pdf_path)
-            text_list = []
-            embedding_list = []
-            metadata_list = []
             print("resolving coref per page")
             for page in pdf_content['pages']:
                 #cleanup
@@ -95,7 +94,7 @@ class process_text(coref_impl):
                 try:
                     text = self.coref_obj.fastcoref_impl(text)
                     # print(text)
-                    if len(text) <=  os.getenv('min_chunk_len', CONF["min_chunk_len"]):
+                    if len(text) <=  len(os.getenv('min_chunk_len', CONF["min_chunk_len"])):
                         continue
 
                     elif len(text) <= 1300:
@@ -110,7 +109,7 @@ class process_text(coref_impl):
                         metadata_list.append(metadata)
                     else:
                         print("**************calling large text processor")
-                        txt_list = self.process_large_text(text, pdf_path, pagenum, text_list, embedding_list, metadata_list)
+                        txt_list = self.process_large_text(text)
                         for text_chunk in txt_list:
                             metadata = {"doc_pagenum" : pagenum}
                             embeddings = self.model.encode(text_chunk)
@@ -123,7 +122,7 @@ class process_text(coref_impl):
         
         print(file_name)
         print('pdf processing complete')
-        print()
+        print(len(text_list))
         return text_list, embedding_list, metadata_list
     
     def extract_text_from_video(self,file_name, video_path):
@@ -167,7 +166,7 @@ class process_text(coref_impl):
                 metadata_list.append(metadata)
             else:
                 print("**************calling large text processor")
-                text_list = self.process_large_text(text, video_path, pagenum, text_list, embedding_list, metadata_list)
+                text_list = self.process_large_text(text)
                 print("$$$$$$$$$$$" + str(len(text_list)))
                 for text_chunk in text_list:
                     metadata = {"doc_pagenum" : pagenum}
@@ -182,8 +181,40 @@ class process_text(coref_impl):
         print('video processing complete')
         print()
         return text_list, embedding_list, metadata_list
+    
+    def ingest_text(self, text, info):
+        text_list = []
+        embedding_list = []
+        metadata_list = []
+        try:
+            text = self.coref_obj.fastcoref_impl(text)
+            # print(text)
 
-    def process_large_text(self, text, pdf_path, pagenum, text_list, embedding_list, metadata_list):
+            if len(text) <= 1300:
+                print("**************text len in page smaller than 1300")
+                metadata = {"doc_pagenum" : 0, "doc_name" : info}
+                # metadata = {"doc_pagenum" : pagenum}
+                text_list.append(text)
+                # print(file_name)
+                # print(text)
+                embeddings = self.model.encode(text)
+                embedding_list.append(embeddings)
+                metadata_list.append(metadata)
+            else:
+                print("**************calling large text processor")
+                text_list = self.process_large_text(text)
+                print("$$$$$$$$$$$" + str(len(text_list)))
+                for count, text_chunk in enumerate(text_list):
+                    metadata = {"doc_pagenum" : count}
+                    embeddings = self.model.encode(text_chunk)
+                    embedding_list.append(embeddings)
+                    metadata_list.append(metadata)
+
+        except Exception as e:
+            print("Error:" + str(e))
+        return text_list, embedding_list, metadata_list
+
+    def process_large_text(self, text):
         print('***************processing large text')
         threshold = 0.3
         sentences, sentence_embeddings = self.process(text)
@@ -212,7 +243,7 @@ class process_text(coref_impl):
             
                 self.start_word= cluster_txt[:10]
                 
-                self.process_large_text(cluster_txt, pdf_path, pagenum, text_list, embedding_list, metadata_list)
+                self.process_large_text(cluster_txt)
             else:
                 print("in else_statement")
                 if self.buffer_text:
