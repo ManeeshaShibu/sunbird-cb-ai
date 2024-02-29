@@ -82,10 +82,10 @@ class process_text(coref_impl):
                     #skip the TOC pages
                     continue
                 text = page['text'].strip()
-                if page['header']:
-                    text = text.replace(page['header'], ' ')
-                if page['footer']:
-                    text = text.replace(page['footer'], ' ')
+                # if page['header']:
+                #     text = text.replace(page['header'], ' ')
+                # if page['footer']:
+                #     text = text.replace(page['footer'], ' ')
                 if len(text.strip())<1:
                     continue
 
@@ -95,7 +95,8 @@ class process_text(coref_impl):
                 try:
                     text = self.coref_obj.fastcoref_impl(text)
                     # print(text)
-                    if len(text) <=  os.getenv('min_chunk_len', CONF["min_chunk_len"]):
+                    # if len(text) <=  os.getenv('min_chunk_len', CONF["min_chunk_len"]):
+                    if len(text) <=  100:
                         continue
 
                     elif len(text) <= 1300:
