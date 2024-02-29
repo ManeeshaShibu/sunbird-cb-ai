@@ -95,8 +95,7 @@ class process_text(coref_impl):
                 try:
                     text = self.coref_obj.fastcoref_impl(text)
                     # print(text)
-                    # if len(text) <=  os.getenv('min_chunk_len', CONF["min_chunk_len"]):
-                    if len(text) <=  100:
+                     if len(text) <=  int(os.getenv('min_chunk_len', CONF["min_chunk_len"])):
                         continue
 
                     elif len(text) <= 1300:
