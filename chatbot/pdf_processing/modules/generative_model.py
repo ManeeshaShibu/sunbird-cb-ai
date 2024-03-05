@@ -24,7 +24,7 @@ class answer_generation:
                     "content": prompt,
                 }
             ],
-            model="gpt-3.5-turbo",
+            model=os.getenv('generative_model', self.conf["generative_model"]),
         )
         return chat_completion.choices[0].message.content
 
@@ -40,7 +40,7 @@ class answer_generation:
                     "content": prompt,
                 }
             ],
-            model="gpt-3.5-turbo",
+            model=os.getenv('generative_model', self.conf["generative_model"]),
         )
         return chat_completion.choices[0].message.content
 
