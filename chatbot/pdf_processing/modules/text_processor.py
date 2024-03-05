@@ -287,7 +287,7 @@ class process_text(coref_impl):
         llm_response = self.gen_answer.generate_similar_sentences(query)
         final_text = query
         for sentence in llm_response.split('\n'):
-            final_text = final_text + sentence.split('. ')[1]
+            final_text = final_text + ' ' + sentence.split('. ')[1]
         
         return final_text
     
