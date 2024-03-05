@@ -137,7 +137,7 @@ def ingest_content():
         
         
         query = text_processor.generate_multiple_variations(query)
-
+        query = query.lower()
         print(query)
 
         text_list, embedding_list, metadata_list = text_processor.ingest_text(query, answer)
@@ -269,7 +269,7 @@ def generate_answers():
     for result in selected_context_combined:
         answers_final.append(result["text-chunk"])
 
-    answers_final = '\n\n'.join(answers_final)
+    answers_final = '               '.join(answers_final)
     generated_ans = generate_answer.openai_answer(query,answers_final)
 
     return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final}), 200
