@@ -127,13 +127,14 @@ def ingest_content():
     data = request.get_json()
     print(data)
     faqs =  data.get('faqs', '')
+    text_processor = process_text(nlp_model, transformer_model)
     for question in faqs:
         #collection_name = data.get('collection_name', '')
         query = question.get('query', '')
         answer = question.get('answer', '')
         
         collection, priority_collection = milvus.get_collection()
-        text_processor = process_text(nlp_model, transformer_model)
+        
         
         query = text_processor.generate_multiple_variations(query)
 
