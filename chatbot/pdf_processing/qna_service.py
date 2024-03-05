@@ -145,6 +145,7 @@ def ingest_content():
             df = pd.DataFrame()
             df['text_list'] = text_list
             df.to_csv('check_text.csv')
+            del df
 
             print(len(embedding_list))
             print(len(text_list))
