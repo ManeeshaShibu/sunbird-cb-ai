@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from modules.coref_resolver import coref_impl
 from repo.milvus_entity import milvus_collection
 from modules.text_processor import process_text
+from modules.format_search_results import format_answer
 import pandas as pd
 import json
 from modules.generative_model import answer_generation
@@ -40,7 +41,7 @@ coref_obj = coref_impl()
 
 
 generate_answer = answer_generation()
-
+formatted_answer = format_answer()
 
 @app.route('/')
 def index():
@@ -121,48 +122,55 @@ def upload_file():
 
     return jsonify({'error': 'Invalid file format'}), 400
 
-@app.route('/ingest', methods = ['POST'])
+@app.route('/ingest/faq', methods = ['POST'])
 def ingest_content():
     data = request.get_json()
     print(data)
-    #collection_name = data.get('collection_name', '')
-    query = data.get('content', '')
-    info = data.get('info', '')
-    collection, priority_collection = milvus.get_collection()
-    text_processor = process_text(nlp_model, transformer_model)
-    text_list, embedding_list, metadata_list = text_processor.ingest_text(query, info)
-    if len(text_list) > 0:
-        df = pd.DataFrame()
-        df['text_list'] = text_list
-        df.to_csv('check_text.csv')
-
-        print(len(embedding_list))
-        print(len(text_list))
-        print(len(metadata_list))
-        priority_collection.insert([ embedding_list, text_list, metadata_list])
+    faqs =  data.get('faqs', '')
+    for question in faqs:
+        #collection_name = data.get('collection_name', '')
+        query = question.get('query', '')
+        answer = question.get('answer', '')
         
-        # Create an index on the "embeddings" field
-        index_params = {
+        collection, priority_collection = milvus.get_collection()
+        text_processor = process_text(nlp_model, transformer_model)
+        
+        query = text_processor.generate_multiple_variations(query)
+
+        print(query)
+
+        text_list, embedding_list, metadata_list = text_processor.ingest_text(query, answer)
+        if len(text_list) > 0:
+            df = pd.DataFrame()
+            df['text_list'] = text_list
+            df.to_csv('check_text.csv')
+
+            print(len(embedding_list))
+            print(len(text_list))
+            print(len(metadata_list))
+            priority_collection.insert([ embedding_list, text_list, metadata_list])
+        
+    # Create an index on the "embeddings" field
+    index_params = {
             'metric_type': 'L2',
             'index_type': "HNSW",
             'efConstruction': 40,
             'M': 20
-        }
-        priority_collection.create_index(field_name="embeddings", index_params=index_params)
-        print('Index created.')
+    }
+    priority_collection.create_index(field_name="embeddings", index_params=index_params)
+    print('Index created.')
 
             #loads collection if not loaded already
-        milvus.load_collection()
-        del text_processor
-        del embedding_list
-        del text_list
-        del metadata_list
-        del priority_collection
-        del collection
-        gc.collect()
-        return jsonify({'message': 'Data inserted into the collection.'}), 200
-    else:
-        return jsonify({'message': 'Empty chunks obtained'}), 400
+    milvus.load_collection()
+    del text_processor
+    del embedding_list
+    del text_list
+    del metadata_list
+    del priority_collection
+    del collection
+    gc.collect()
+    return jsonify({'message': 'Data inserted into the collection.'}), 200
+    
 
 @app.route('/search-answers', methods=['POST'])
 def search_answers():
@@ -202,7 +210,10 @@ def search_answers():
 
     for result in priority_search_results:
         for r in result:
-            priority_answer.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
+            print("**********************^")
+            print(r.entity.metadata)
+            print("**********************")
+            priority_answer.append({"text-chunk" : r.entity.metadata, "similarity_distacne" : r.distance})
 
 
     #crude reranking
@@ -223,7 +234,8 @@ def generate_answers():
     # Define and load the Milvus collection
     collection, priority_collection = milvus.get_collection()
     collection.load()
-    print("Collection loaded.")
+    priority_collection.load()
+    print("Collections loaded.")
 
     # Encode the query
     query_encode = text_processor_preloaded.get_model().encode(query.lower())
@@ -233,17 +245,32 @@ def generate_answers():
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
                                       limit=10, consistency_level="Strong")
+    priority_search_results = priority_collection.search(data=[query_encode], anns_field="embeddings",
+                                      param={"metric": "L2", "offset": 0},
+                                      output_fields=["metadata", "metadata_page", "text"],
+                                      limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
+    
+    answers_final = []
+    priority_answer = []
+    for result in search_results:
+        for r in result:
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
+
+    for result in priority_search_results:
+        for r in result:
+            priority_answer.append({"text-chunk" : r.entity.metadata, "similarity_distacne" : r.distance})
+    
+    selected_context_combined = formatted_answer.return_combined_chunks(answers_final, priority_answer, os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
     #print(search_results)
     # Extract relevant information from search results
     answers_final = []
-    for result in search_results:
-        for r in result:
-            answers_final.append(r.entity.text)
+    for result in selected_context_combined:
+        answers_final.append(result["text-chunk"])
 
-
+    answers_final = '\n\n'.join(answers_final)
     generated_ans = generate_answer.openai_answer(query,answers_final)
 
-    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"])] }), 200
+    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final}), 200
 
 if __name__ == '__main__':
     print("running on 5000 port")

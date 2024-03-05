@@ -47,7 +47,8 @@ class milvus_collection:
     
     def load_collection(self):
         self.collection.load()
-        return self.collection
+        self.priority_collection.load()
+        return self.collection, self.priority_collection
     
     def drop_collection(self, collection_name):
         utility.drop_collection(collection_name)

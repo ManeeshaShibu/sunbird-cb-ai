@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 from fastcoref import spacy_component
 from modules.pdf_parser import process_pdf
 from modules.coref_resolver import coref_impl
+from modules.generative_model import answer_generation
 from repo.milvus_entity import milvus_collection
 import pandas as pd
 import json
@@ -30,7 +31,8 @@ class process_text(coref_impl):
         self.nlp = nlp_model
         self.model = transformer_model
         self.coref_obj = coref_impl()        
-        self.pdf_processor = process_pdf()        
+        self.pdf_processor = process_pdf()
+        self.gen_answer = answer_generation()    
         self.buffer_text = []
         pass
 
@@ -192,7 +194,7 @@ class process_text(coref_impl):
 
             if len(text) <= 1300:
                 print("**************text len in page smaller than 1300")
-                metadata = {"doc_pagenum" : 0, "doc_name" : info}
+                metadata = {"doc_pagenum" : 0, "answer" : info}
                 # metadata = {"doc_pagenum" : pagenum}
                 text_list.append(text)
                 # print(file_name)
@@ -281,6 +283,14 @@ class process_text(coref_impl):
         print(len(smaller_chunks))
         print(json.dumps(smaller_chunks))
         return smaller_chunks
-
+    def generate_multiple_variations(self, query):
+        llm_response = self.gen_answer.generate_similar_sentences(query)
+        final_text = query
+        for sentence in llm_response.split('\n'):
+            final_text = final_text + sentence.split('. ')[1]
+        
+        return final_text
+    
+    
     def get_model(self):
         return self.model
