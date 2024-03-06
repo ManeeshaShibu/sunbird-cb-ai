@@ -135,12 +135,12 @@ def ingest_content():
         
         collection, priority_collection = milvus.get_collection()
         
-        
-        query = text_processor.generate_multiple_variations(query)
         query = query.lower()
-        print(query)
+        query_variants = text_processor.generate_multiple_variations(query)
+        query_variants = query_variants.lower()
+        print(query_variants)
 
-        text_list, embedding_list, metadata_list = text_processor.ingest_text(query, answer)
+        text_list, embedding_list, metadata_list = text_processor.ingest_text(query, query_variants, answer)
         if len(text_list) > 0:
             df = pd.DataFrame()
             df['text_list'] = text_list
@@ -262,8 +262,10 @@ def generate_answers():
         for r in result:
             priority_answer.append({"text-chunk" : r.entity.metadata, "similarity_distacne" : r.distance})
     
-    selected_context_combined = formatted_answer.return_combined_chunks(answers_final, priority_answer, os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
+    selected_context_combined, absolute_answer = formatted_answer.return_combined_chunks(answers_final, priority_answer, os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
     #print(search_results)
+    if absolute_answer:
+        return jsonify({'generated_ans': selected_context_combined, 'closest context' : "faq"}), 200
     # Extract relevant information from search results
     answers_final = []
     for result in selected_context_combined:

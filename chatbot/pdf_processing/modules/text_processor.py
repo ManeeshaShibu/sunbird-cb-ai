@@ -19,7 +19,7 @@ import json
 import assemblyai as aai
 import numpy as np
 from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
-
+import hashlib
 CONF = None
 with open('conf/config.json') as config_file:
     CONF = json.load(config_file)
@@ -184,33 +184,28 @@ class process_text(coref_impl):
         print()
         return text_list, embedding_list, metadata_list
     
-    def ingest_text(self, text, info):
+    def ingest_text(self, query, query_variants, answer):
         text_list = []
         embedding_list = []
         metadata_list = []
-        try:
-            text = self.coref_obj.fastcoref_impl(text)
-            # print(text)
 
-            if len(text) <= 1300:
-                print("**************text len in page smaller than 1300")
-                metadata = {"doc_pagenum" : 0, "answer" : info}
-                # metadata = {"doc_pagenum" : pagenum}
-                text_list.append(text)
-                # print(file_name)
-                # print(text)
-                embeddings = self.model.encode(text)
-                embedding_list.append(embeddings)
-                metadata_list.append(metadata)
-            else:
-                print("**************calling large text processor")
-                text_list = self.process_large_text(text)
-                print("$$$$$$$$$$$" + str(len(text_list)))
-                for count, text_chunk in enumerate(text_list):
-                    metadata = {"doc_pagenum" : count}
-                    embeddings = self.model.encode(text_chunk)
-                    embedding_list.append(embeddings)
-                    metadata_list.append(metadata)
+        doc_id = hashlib.shake_128(query.encode('utf-8')).hexdigest(4)
+
+        try:
+            metadata = {"doc_pagenum" : 0, "answer" : answer, "type" : "faq_short", "doc_id" : doc_id, "query" :query, "query_variants" : query_variants}
+            text_list.append(query_variants)
+            embeddings = self.model.encode(query_variants)
+            embedding_list.append(embeddings)
+            metadata_list.append(metadata)
+
+            #adding one more entry with answer embedded with the question variations 
+            metadata = {"doc_pagenum" : 0, "answer" : answer, "type" : "faq_long", "doc_id" : doc_id,  "query" :query, "query_variants" : query_variants}
+            text_list.append(query_variants+ " " + answer)
+            embeddings = self.model.encode(query_variants+ " " + answer)
+            embedding_list.append(embeddings)
+            metadata_list.append(metadata)
+
+
 
         except Exception as e:
             print("Error:" + str(e))
@@ -283,6 +278,7 @@ class process_text(coref_impl):
         print(len(smaller_chunks))
         print(json.dumps(smaller_chunks))
         return smaller_chunks
+    
     def generate_multiple_variations(self, query):
         llm_response = self.gen_answer.generate_similar_sentences(query)
         final_text = query

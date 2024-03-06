@@ -24,6 +24,7 @@ class answer_generation:
                     "content": prompt,
                 }
             ],
+            #temperature=1.8,
             model=os.getenv('generative_model', self.conf["generative_model"]),
         )
         return chat_completion.choices[0].message.content
