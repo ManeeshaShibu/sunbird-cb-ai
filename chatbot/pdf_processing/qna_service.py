@@ -12,7 +12,6 @@ import torch.nn.functional as F
 from modules.coref_resolver import coref_impl
 from repo.milvus_entity import milvus_collection
 from modules.text_processor import process_text
-from modules.format_search_results import format_answer
 from modules.faq_handler import faq
 import pandas as pd
 import json
@@ -43,7 +42,6 @@ coref_obj = coref_impl()
 
 
 generate_answer = answer_generation()
-formatted_answer = format_answer()
 
 @app.route('/')
 def index():
