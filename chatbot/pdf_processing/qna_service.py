@@ -13,6 +13,7 @@ from modules.coref_resolver import coref_impl
 from repo.milvus_entity import milvus_collection
 from modules.text_processor import process_text
 from modules.format_search_results import format_answer
+from modules.faq_handler import faq
 import pandas as pd
 import json
 from modules.generative_model import answer_generation
@@ -24,6 +25,7 @@ app = Flask(__name__)
 nlp_model = spacy.load("en_core_web_sm")
 transformer_model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
 text_processor_preloaded = process_text(nlp_model, transformer_model)
+faq_obj = faq()
 milvus = milvus_collection()
 print("start")
 CONF = None
@@ -66,7 +68,7 @@ def upload_file():
     if request.method == 'POST':
         file = request.files['file']
         print("##########")
-    collection, priority_collection = milvus.get_collection()
+    collection = milvus.get_collection()
 
 
     if file:
@@ -127,51 +129,8 @@ def ingest_content():
     data = request.get_json()
     print(data)
     faqs =  data.get('faqs', '')
-    text_processor = process_text(nlp_model, transformer_model)
-    for question in faqs:
-        #collection_name = data.get('collection_name', '')
-        query = question.get('query', '')
-        answer = question.get('answer', '')
-        
-        collection, priority_collection = milvus.get_collection()
-        
-        query = query.lower()
-        query_variants = text_processor.generate_multiple_variations(query)
-        query_variants = query_variants.lower()
-        print(query_variants)
-
-        text_list, embedding_list, metadata_list = text_processor.ingest_text(query, query_variants, answer)
-        if len(text_list) > 0:
-            df = pd.DataFrame()
-            df['text_list'] = text_list
-            df.to_csv('check_text.csv')
-            del df
-
-            print(len(embedding_list))
-            print(len(text_list))
-            print(len(metadata_list))
-            priority_collection.insert([ embedding_list, text_list, metadata_list])
-        
-    # Create an index on the "embeddings" field
-    index_params = {
-            'metric_type': 'L2',
-            'index_type': "HNSW",
-            'efConstruction': 40,
-            'M': 20
-    }
-    priority_collection.create_index(field_name="embeddings", index_params=index_params)
-    print('Index created.')
-
-            #loads collection if not loaded already
-    milvus.load_collection()
-    del text_processor
-    del embedding_list
-    del text_list
-    del metadata_list
-    del priority_collection
-    del collection
-    gc.collect()
-    return jsonify({'message': 'Data inserted into the collection.'}), 200
+    faq_obj.load_faq(faqs)
+    return jsonify({'message': 'loaded the FAQs'}), 200
     
 
 @app.route('/search-answers', methods=['POST'])
@@ -183,46 +142,38 @@ def search_answers():
     query = data.get('query', '')
     print(collection_name)
     print(query)
+
+    clean_query = text_processor_preloaded.clean_text(query)
+    
+
+    faq_response, score = faq_obj.query(clean_query)
+    if faq_response:
+        return jsonify({'generated_ans': faq_response, 'closest context' : "faq", "score" : score}), 200 
+    
+    query_encode = text_processor_preloaded.get_model().encode(clean_query)
     # Define and load the Milvus collection
-    collection, priority_collection = milvus.get_collection()
+    collection = milvus.get_collection()
     collection.load()
-    priority_collection.load()
     print("Collection loaded.")
 
     # Encode the query
-    clean_query = text_processor_preloaded.clean_text(query)
-    query_encode = text_processor_preloaded.get_model().encode(clean_query)
+    
 
     # Perform a search to get answers
+    
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
                                       limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
-    priority_search_results = priority_collection.search(data=[query_encode], anns_field="embeddings",
-                                      param={"metric": "L2", "offset": 0},
-                                      output_fields=["metadata", "metadata_page", "text"],
-                                      limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
+    
     print(search_results)
     # Extract relevant information from search results
     answers_final = []
-    priority_answer = []
     for result in search_results:
         for r in result:
             answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
 
-    for result in priority_search_results:
-        for r in result:
-            print("**********************^")
-            print(r.entity.metadata)
-            print("**********************")
-            priority_answer.append({"text-chunk" : r.entity.metadata, "similarity_distacne" : r.distance})
-
-
-    #crude reranking
-    #jaccard_closest_percentage = text_processor.jaccard_sim_list(clean_query, answers_final)
-    #jaccard_closest = answers_final[jaccard_closest_percentage.index(max(jaccard_closest_percentage))]
-    #print(jaccard_closest)
-    return jsonify({'answers_final': answers_final, 'priority':priority_answer}), 200
+    return jsonify({'answers_final': answers_final}), 200
 
 @app.route('/generate-answers', methods=['POST'])
 def generate_answers():
@@ -231,12 +182,15 @@ def generate_answers():
     #collection_name = data.get('collection_name', '')
     collection_name = os.getenv('milvus_collection_name', CONF["milvus_collection_name"])
     query = data.get('query', '')
+    clean_query = text_processor_preloaded.clean_text(query)
+    faq_response, score = faq_obj.query(clean_query)
+    if faq_response:
+        return jsonify({'generated_ans': faq_response, 'closest context' : "faq", "score" : score}), 200 
     print(collection_name)
     print(query)
     # Define and load the Milvus collection
-    collection, priority_collection = milvus.get_collection()
+    collection = milvus.get_collection()
     collection.load()
-    priority_collection.load()
     print("Collections loaded.")
 
     # Encode the query
@@ -247,35 +201,26 @@ def generate_answers():
                                       param={"metric": "L2", "offset": 0},
                                       output_fields=["metadata", "metadata_page", "text"],
                                       limit=10, consistency_level="Strong")
-    priority_search_results = priority_collection.search(data=[query_encode], anns_field="embeddings",
-                                      param={"metric": "L2", "offset": 0},
-                                      output_fields=["metadata", "metadata_page", "text"],
-                                      limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
+    
     
     answers_final = []
-    priority_answer = []
     for result in search_results:
         for r in result:
             answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
 
-    for result in priority_search_results:
-        for r in result:
-            priority_answer.append({"text-chunk" : r.entity.metadata, "similarity_distacne" : r.distance})
-    
-    selected_context_combined, absolute_answer = formatted_answer.return_combined_chunks(answers_final, priority_answer, os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
+    answers_final = sorted(answers_final, key=lambda x: x["similarity_distacne"], reverse=False)
+    top_n = int(os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
+    context = ""
+    for answer in answers_final[:top_n]:
+        print(answer['text-chunk'])
+        context = context + "          " + answer['text-chunk']
     #print(search_results)
-    if absolute_answer:
-        return jsonify({'generated_ans': selected_context_combined, 'closest context' : "faq"}), 200
+   
     # Extract relevant information from search results
-    answers_final = []
-    for result in selected_context_combined:
-        answers_final.append(result["text-chunk"])
+    #answers_final = '               '.join(answers_final)
+    generated_ans = generate_answer.openai_answer(query,context)
 
-    answers_final = '               '.join(answers_final)
-    generated_ans = generate_answer.openai_answer(query,answers_final)
-
-    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final}), 200
-
+    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:top_n]}), 200
 if __name__ == '__main__':
     print("running on 5000 port")
     app.run(debug=False, host='0.0.0.0', port=5000)
