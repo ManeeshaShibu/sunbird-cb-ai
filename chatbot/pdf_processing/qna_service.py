@@ -146,7 +146,7 @@ def search_answers():
 
     faq_response, score = faq_obj.query(clean_query)
     if faq_response:
-        return jsonify({'generated_ans': faq_response, 'closest context' : "faq", "score" : score}), 200 
+        return jsonify(json.loads(faq_response)), 200 
     
     query_encode = text_processor_preloaded.get_model().encode(clean_query)
     # Define and load the Milvus collection
@@ -183,7 +183,7 @@ def generate_answers():
     clean_query = text_processor_preloaded.clean_text(query)
     faq_response, score = faq_obj.query(clean_query)
     if faq_response:
-        return jsonify({'generated_ans': faq_response, 'closest context' : "faq", "score" : score}), 200 
+        return jsonify(json.loads(faq_response)), 200 
     print(collection_name)
     print(query)
     # Define and load the Milvus collection
