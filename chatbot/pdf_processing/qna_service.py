@@ -145,9 +145,10 @@ def search_answers():
     
 
     faq_response, score = faq_obj.query(clean_query)
-    if faq_response:
-        return jsonify(json.loads(faq_response)), 200 
+    if faq_response and score > float(os.getenv('faq_cutoff_direct', CONF["faq_cutoff_direct"])):
+        return faq_response, 200 
     
+
     query_encode = text_processor_preloaded.get_model().encode(clean_query)
     # Define and load the Milvus collection
     collection = milvus.get_collection()
@@ -181,9 +182,11 @@ def generate_answers():
     collection_name = os.getenv('milvus_collection_name', CONF["milvus_collection_name"])
     query = data.get('query', '')
     clean_query = text_processor_preloaded.clean_text(query)
-    faq_response, score = faq_obj.query(clean_query)
-    if faq_response:
-        return jsonify(json.loads(faq_response)), 200 
+    faq_response, faq_score = faq_obj.query(clean_query)
+
+    if faq_response and faq_score > float(os.getenv('faq_cutoff_direct', CONF["faq_cutoff_direct"])):
+        return faq_response, 200 
+    
     print(collection_name)
     print(query)
     # Define and load the Milvus collection
@@ -212,6 +215,10 @@ def generate_answers():
     for answer in answers_final[:top_n]:
         print(answer['text-chunk'])
         context = context + "          " + answer['text-chunk']
+    
+    if faq_score > float(os.getenv('faq_cutoff_overall', CONF["faq_cutoff_overall"])):
+        context = context + "          " + faq_response['generated_ans']["text-chunk"] + " " + faq_response['generated_ans']["answer"]["answer"]
+
     #print(search_results)
    
     # Extract relevant information from search results

@@ -31,7 +31,8 @@ class faq:
 
         if response.status_code == 200:
             print(response.text)
-            return response.text, response.text
+            resp_obj = json.loads(response.text)
+            return resp_obj, resp_obj['score']
 
         else:
             return False, False
