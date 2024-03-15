@@ -1,55 +1,52 @@
-from haystack.document_stores import InMemoryDocumentStore
-from haystack.nodes import EmbeddingRetriever
 import pandas as pd
-from haystack.pipelines import FAQPipeline
-from haystack.utils import print_answers
 import os
 import json
+from sentence_transformers import SentenceTransformer, util
+from repo.milvus_entity import milvus_collection
 
 class faq:
     
     def __init__(self) -> None:
         with open('conf/config.json') as config_file:
             self.conf = json.load(config_file)
-        self.document_store = InMemoryDocumentStore()
-        self.retriever = EmbeddingRetriever(
-            document_store=self.document_store,
-            embedding_model="sentence-transformers/all-MiniLM-L6-v2",
-            use_gpu=True,
-            scale_score=False,
-        )
         self.ques_list = []
         self.ans_list = []
-        
-        self.pipe = []
+        self.milvus = milvus_collection()
+        self.model = SentenceTransformer(os.getenv('encoding_model', self.conf['encoding_model']))
 
     def load_faq(self, faq_json):
         faq_data = pd.DataFrame()
         print(type(faq_json))
-        print(faq_json)
         for obj in faq_json:
             print(obj)
-            self.ques_list.append(obj['heading'])
-            self.ans_list.append(obj['value'])
+            self.ques_list.append(obj['query'])
+            self.ans_list.append({'answer' : obj['answer']})
+
         faq_data['question'] = self.ques_list
         faq_data["question"] = faq_data["question"].apply(lambda x: x.strip())
-        faq_data['answer'] = self.ans_list
+        
+        self.ques_list = list(faq_data["question"].values)
+        embeddings = self.gen_emb(self.ques_list)
+        self.milvus.store_to_milvus(self.ques_list, embeddings, self.ans_list)
+        self.milvus.load_collection()
 
-        questions = list(faq_data["question"].values)
-        faq_data["embedding"] = self.retriever.embed_queries(queries=questions).tolist()
-        faq_data = faq_data.rename(columns={"question": "content"})
-        docs_to_index = faq_data.to_dict(orient="records")
-        self.document_store.write_documents(docs_to_index)
+        
 
-        self.pipe = FAQPipeline(retriever=self.retriever)
-
+    def gen_emb(self, sentences_list):
+        #sentences_list = get_queries_wordlist()
+        
+        embeddings_list = self.model.encode(sentences_list, convert_to_tensor=False, normalize_embeddings=True)
+        return embeddings_list
+    
     def query(self, ques):
-        prediction = self.pipe.run(query=ques, params={"Retriever": {"top_k": 1}})
-        #print_answers(prediction, details="medium")
-        answer =  prediction['answers'][0]
-        if answer.score > float(os.getenv('haystack_faq_cutoff', self.conf["haystack_faq_cutoff"])):
-            return answer.answer, answer.score
-        else:
-            return False, False
+        self.milvus.load_collection()
+        ques_emb = self.gen_emb([ques])
+        res = self.milvus.search_milvus(ques_emb[0])
+        answer = []
+        for result in res:
+            for r in result:
+                print(r)
+                answer = {"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "answer" : r.entity.metadata}
+        return answer, answer['similarity_distacne']
     
 
