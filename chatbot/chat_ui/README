@@ -1,0 +1,29 @@
+# Document QnA Backend UI
+
+This project provides a user interface for interacting with the Document QnA backend.
+
+## Local Setup
+
+To run this UI locally, follow these steps:
+
+### Node Installation
+
+1. Install Node.js: [Download Node.js](https://nodejs.org/en/download)
+   
+2. Install Axios and Express:
+
+```bash
+npm install axios
+npm install express
+
+
+### Start the Node.js Proxy Server
+
+Run the following command to start the proxy server:
+
+node node_proxy.js
+
+
+### Open the UI and start interacting
+Open chat.html using your preferred web browser.
+
