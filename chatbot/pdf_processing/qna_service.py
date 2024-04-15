@@ -77,24 +77,27 @@ def upload_file():
         print('staged file locally: ' + str(file.filename))
         text_list = []
         embedding_list = []
-        metadata_list = []
-        # Extract text and metadata from the PDF
+        page_list = []
+        # Extract text and page from the PDF
         if file.filename.endswith(".pdf"):
-            text_list, embedding_list, metadata_list = text_processor.extract_text_from_pdf(uploaded_file_path)
+            text_list, embedding_list, page_list, doc_list, doc_parent_list, origin_list = text_processor.extract_text_from_pdf(uploaded_file_path)
         elif file.filename.endswith(".mp4"):
             print("@@@@@@@@@@@")
-            text_list, embedding_list, metadata_list = text_processor.extract_text_from_video(file.filename,uploaded_file_path)
+            text_list, embedding_list, page_list, doc_list, doc_parent_list, origin_list = text_processor.extract_text_from_video(file.filename,uploaded_file_path)
         # Insert data into Milvus collection
         print('inseritng into collection')
-        #    schema = CollectionSchema(fields=[document_id, metadata, metadata_page, embeddings, text], enable_dynamic_field=True)
+        #    schema = CollectionSchema(fields=[document_id, page, page_page, embeddings, text], enable_dynamic_field=True)
         df = pd.DataFrame()
         df['text_list'] = text_list
         df.to_csv('check_text.csv')
 
         print(len(embedding_list))
         print(len(text_list))
-        print(len(metadata_list))
-        collection.insert([ embedding_list, text_list, metadata_list])
+        print(len(page_list))
+        print(len(doc_list))
+        print(len(doc_parent_list))
+        print(len(origin_list))
+        collection.insert([ embedding_list, text_list, page_list, doc_list, doc_parent_list, origin_list])
         
         # Create an index on the "embeddings" field
         index_params = {
@@ -114,8 +117,11 @@ def upload_file():
         del text_processor
         del embedding_list
         del text_list
-        del metadata_list
+        del page_list
         del collection
+        del doc_list
+        del doc_parent_list
+        del origin_list
         gc.collect()
 
         return jsonify({'message': 'Data inserted into the collection.'}), 200
@@ -162,7 +168,7 @@ def search_answers():
     
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
-                                      output_fields=["metadata", "metadata_page", "text"],
+                                      output_fields=["page", "page_page", "text"],
                                       limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")
     
     print(search_results)
@@ -170,7 +176,7 @@ def search_answers():
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page})
 
     return jsonify({'answers_final': answers_final}), 200
 
@@ -200,14 +206,14 @@ def generate_answers():
     # Perform a search to get answers
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
-                                      output_fields=["metadata", "metadata_page", "text"],
+                                      output_fields=["page", "page_page", "text"],
                                       limit=10, consistency_level="Strong")
     
     
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance})
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page})
 
     answers_final = sorted(answers_final, key=lambda x: x["similarity_distacne"], reverse=False)
     top_n = int(os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))

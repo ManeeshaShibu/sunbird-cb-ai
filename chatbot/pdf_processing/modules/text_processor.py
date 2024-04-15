@@ -20,6 +20,10 @@ import assemblyai as aai
 import numpy as np
 from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 import hashlib
+import moviepy.editor as mp
+from transformers import pipeline
+import whisper
+
 CONF = None
 with open('conf/config.json') as config_file:
     CONF = json.load(config_file)
@@ -66,14 +70,18 @@ class process_text(coref_impl):
         print('pdf processing started')
         text_list = []
         embedding_list = []
-        metadata_list = []                 
+        page_list = [] 
+        doc_list = [] 
+        doc_parent_list = [] 
+        origin_list = []                 
         with open(pdf_path, 'rb') as pdf_file:
             file_signature = self.doc_signature(pdf_file)
             # print(pdf_path)
             # print(pdf_file)
             
             print("***********************")
-            file_name=pdf_path.split("\\")[-1]
+            file_name=pdf_path.split("\\")[-1].split("__")[-1]
+            doc_parent=pdf_path.split("\\")[-1].split("__")[0]
             # print(file_name)
             pdf_content = self.pdf_processor.consume_pdf(pdf_path)
             print("resolving coref per page")
@@ -102,22 +110,28 @@ class process_text(coref_impl):
                     elif len(text) <= 1300:
                         print("**************text len in page smaller than 1300")
                         # print(type(pdf_file))
-                        metadata = {"doc_pagenum" : pagenum, "doc_name" : file_name, "doc_signature" : file_signature}
+                        
+                        doc_list.append(file_name)
                         text_list.append(text)
+                        doc_parent_list.append(doc_parent)
+                        origin_list.append("course on portal")
                         # print(file_name)
                         # print(text)
                         embeddings = self.model.encode(text)
                         embedding_list.append(embeddings)
-                        metadata_list.append(metadata)
+                        page_list.append(pagenum)
                     else:
                         print("**************calling large text processor")
                         txt_list = self.process_large_text(text)
                         for text_chunk in txt_list:
-                            metadata = {"doc_pagenum" : pagenum}
+                            page = {"doc_pagenum" : pagenum}
                             embeddings = self.model.encode(text_chunk)
                             embedding_list.append(embeddings)
-                            metadata_list.append(metadata)
+                            page_list.append(page)
                             text_list.append(text_chunk) #### added
+                            doc_list.append(file_name)
+                            doc_parent_list.append(doc_parent)
+                            origin_list.append("course on portal")
 
                 except Exception as e:
                     print("Error:" + str(e))
@@ -125,21 +139,36 @@ class process_text(coref_impl):
         print(file_name)
         print('pdf processing complete')
         print(len(text_list))
-        return text_list, embedding_list, metadata_list
+        return text_list, embedding_list, page_list
     
-    def extract_text_from_video(self,file_name, video_path):
+    def extract_text_from_video(self,f_ile, video_path):
         print('video processing started')
+        os.makedirs(".//audio_directory", exist_ok=True)
+        audio_path=".//audio_directory//test_1.wav"
+        # video_path=r"C:\Users\Palash Ashok Bhosale\Jupy\Projects\Bot_NLP\pdff\test_video\coal_1.mp4"
+        clip = mp.VideoFileClip(video_path, audio_fps=5500)
+        clip.audio.write_audiofile(audio_path, codec='pcm_s16le')
+        pipe = pipeline("automatic-speech-recognition", model="openai/whisper-large")
+        out = pipe(audio_path)
+        out['text']
+        text= out['text']
+
                              
-        aai.settings.api_key = "9bd4c3b823fd42ad9135fb8c8c0b7670"
-        transcriber = aai.Transcriber()
-        transcript = transcriber.transcribe(video_path)
+        # aai.settings.api_key = "9bd4c3b823fd42ad9135fb8c8c0b7670"
+        # transcriber = aai.Transcriber()
+        # transcript = transcriber.transcribe(video_path)
         
         text_list = []
         embedding_list = []
-        metadata_list = []
+        page_list = []
+        doc_list = [] 
+        doc_parent_list = [] 
+        origin_list = [] 
         print("resolving coref per page")
+        file_name=video_path.split("\\")[-1].split("__")[-1]
+        doc_parent=video_path.split("\\")[-1].split("__")[0]
         
-        text = transcript.text.strip()
+        # text = transcript.text.strip()
         print(text)
         def gen():
             n=0
@@ -158,23 +187,29 @@ class process_text(coref_impl):
                 print("**************text len in page smaller than 1300")
                 print(type(file_name))
                 print(file_name)
-                metadata = {"doc_pagenum" : pagenum, "doc_name" : file_name}
-                # metadata = {"doc_pagenum" : pagenum}
+                
+                # page = {"doc_pagenum" : pagenum}
                 text_list.append(text)
                 # print(file_name)
                 # print(text)
                 embeddings = self.model.encode(text)
                 embedding_list.append(embeddings)
-                metadata_list.append(metadata)
+                page_list.append(pagenum)
+                doc_list.append(file_name)
+                doc_parent_list.append(doc_parent)
+                origin_list.append("course on portal")
             else:
                 print("**************calling large text processor")
                 text_list = self.process_large_text(text)
                 print("$$$$$$$$$$$" + str(len(text_list)))
                 for text_chunk in text_list:
-                    metadata = {"doc_pagenum" : pagenum}
+                    page = {"doc_pagenum" : pagenum}
                     embeddings = self.model.encode(text_chunk)
                     embedding_list.append(embeddings)
-                    metadata_list.append(metadata)
+                    page_list.append(page)
+                    doc_list.append(file_name)
+                    doc_parent_list.append(doc_parent)
+                    origin_list.append("course on portal")
 
         except Exception as e:
             print("Error:" + str(e))
@@ -182,34 +217,34 @@ class process_text(coref_impl):
         print(file_name)
         print('video processing complete')
         print()
-        return text_list, embedding_list, metadata_list
+        return text_list, embedding_list, page_list
     
     def ingest_text(self, query, query_variants, answer):
         text_list = []
         embedding_list = []
-        metadata_list = []
+        page_list = []
 
         doc_id = hashlib.shake_128(query.encode('utf-8')).hexdigest(4)
 
         try:
-            metadata = {"doc_pagenum" : 0, "answer" : answer, "type" : "faq_short", "doc_id" : doc_id, "query" :query, "query_variants" : query_variants}
+            page = {"doc_pagenum" : 0, "answer" : answer, "type" : "faq_short", "doc_id" : doc_id, "query" :query, "query_variants" : query_variants}
             text_list.append(query_variants)
             embeddings = self.model.encode(query_variants)
             embedding_list.append(embeddings)
-            metadata_list.append(metadata)
+            page_list.append(page)
 
             #adding one more entry with answer embedded with the question variations 
-            metadata = {"doc_pagenum" : 0, "answer" : answer, "type" : "faq_long", "doc_id" : doc_id,  "query" :query, "query_variants" : query_variants}
+            page = {"doc_pagenum" : 0, "answer" : answer, "type" : "faq_long", "doc_id" : doc_id,  "query" :query, "query_variants" : query_variants}
             text_list.append(query_variants+ " " + answer)
             embeddings = self.model.encode(query_variants+ " " + answer)
             embedding_list.append(embeddings)
-            metadata_list.append(metadata)
+            page_list.append(page)
 
 
 
         except Exception as e:
             print("Error:" + str(e))
-        return text_list, embedding_list, metadata_list
+        return text_list, embedding_list, page_list
 
     def process_large_text(self, text):
         print('***************processing large text')
@@ -251,10 +286,10 @@ class process_text(coref_impl):
         self.start_word=""
         seperated_text_list = self.handle_lerge_chunks(temp_text_list) ## added new variable name "seperated_text_list" and new "list temp_text_list"
         #for text_chunk in text_list:
-        #    metadata = {"doc_pagenum" : pagenum}
+        #    page = {"doc_pagenum" : pagenum}
         #    embeddings = self.model.encode(text_chunk)
         #    embedding_list.append(embeddings)
-        #    metadata_list.append(metadata)
+        #    page_list.append(page)
             
         return seperated_text_list## added new variable name
 

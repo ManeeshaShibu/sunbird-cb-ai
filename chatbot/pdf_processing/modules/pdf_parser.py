@@ -3,7 +3,7 @@ from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument 
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextContainer
-from string_grouper import group_similar_strings
+# from string_grouper import group_similar_strings
 import enchant 
 import textdistance as td
 

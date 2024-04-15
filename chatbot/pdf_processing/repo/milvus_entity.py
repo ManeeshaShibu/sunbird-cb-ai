@@ -18,10 +18,16 @@ class milvus_collection:
 
     def define_collection(self, collection_name):
         document_id = FieldSchema(name='document_id', dtype=DataType.INT64, is_primary=True, auto_id=True)
-        metadata = FieldSchema(name='metadata', dtype=DataType.JSON, max_length=15000)
+        page = FieldSchema(name='page', dtype=DataType.JSON, max_length=100)
         embeddings = FieldSchema(name='embeddings', dtype=DataType.FLOAT_VECTOR, dim=384)
         text = FieldSchema(name='text', dtype=DataType.VARCHAR, max_length=60000)
-        schema = CollectionSchema(fields=[document_id, embeddings, text, metadata], enable_dynamic_field=True)
+
+
+        
+        doc = FieldSchema(name='doc_name', dtype=DataType.JSON, max_length=100)
+        doc_parent = FieldSchema(name='doc_parent', dtype=DataType.JSON, max_length=100)
+        origin = FieldSchema(name='origin', dtype=DataType.JSON, max_length=100)
+        schema = CollectionSchema(fields=[document_id, embeddings, text, page, doc, doc_parent, origin], enable_dynamic_field=True)
         
         if not utility.has_collection(collection_name):
             collection = Collection(name=collection_name, schema=schema, using='default')
