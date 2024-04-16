@@ -26,8 +26,8 @@ class milvus_collection:
         
         doc = FieldSchema(name='doc_name', dtype=DataType.JSON, max_length=100)
         doc_parent = FieldSchema(name='doc_parent', dtype=DataType.JSON, max_length=100)
-        origin = FieldSchema(name='origin', dtype=DataType.JSON, max_length=100)
-        schema = CollectionSchema(fields=[document_id, embeddings, text, page, doc, doc_parent, origin], enable_dynamic_field=True)
+        
+        schema = CollectionSchema(fields=[document_id, embeddings, text, page, doc, doc_parent], enable_dynamic_field=True)
         
         if not utility.has_collection(collection_name):
             collection = Collection(name=collection_name, schema=schema, using='default')

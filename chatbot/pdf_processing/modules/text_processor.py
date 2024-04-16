@@ -72,8 +72,7 @@ class process_text(coref_impl):
         embedding_list = []
         page_list = [] 
         doc_list = [] 
-        doc_parent_list = [] 
-        origin_list = []                 
+        doc_parent_list = []                          
         with open(pdf_path, 'rb') as pdf_file:
             file_signature = self.doc_signature(pdf_file)
             # print(pdf_path)
@@ -131,7 +130,7 @@ class process_text(coref_impl):
                             text_list.append(text_chunk) #### added
                             doc_list.append(file_name)
                             doc_parent_list.append(doc_parent)
-                            origin_list.append("course on portal")
+                            
 
                 except Exception as e:
                     print("Error:" + str(e))
@@ -139,7 +138,7 @@ class process_text(coref_impl):
         print(file_name)
         print('pdf processing complete')
         print(len(text_list))
-        return text_list, embedding_list, page_list
+        return text_list, embedding_list, page_list, doc_list, doc_parent_list
     
     def extract_text_from_video(self,f_ile, video_path):
         print('video processing started')
@@ -163,7 +162,7 @@ class process_text(coref_impl):
         page_list = []
         doc_list = [] 
         doc_parent_list = [] 
-        origin_list = [] 
+        
         print("resolving coref per page")
         file_name=video_path.split("\\")[-1].split("__")[-1]
         doc_parent=video_path.split("\\")[-1].split("__")[0]
@@ -197,7 +196,7 @@ class process_text(coref_impl):
                 page_list.append(pagenum)
                 doc_list.append(file_name)
                 doc_parent_list.append(doc_parent)
-                origin_list.append("course on portal")
+                
             else:
                 print("**************calling large text processor")
                 text_list = self.process_large_text(text)
@@ -209,7 +208,7 @@ class process_text(coref_impl):
                     page_list.append(page)
                     doc_list.append(file_name)
                     doc_parent_list.append(doc_parent)
-                    origin_list.append("course on portal")
+                    
 
         except Exception as e:
             print("Error:" + str(e))
@@ -217,7 +216,7 @@ class process_text(coref_impl):
         print(file_name)
         print('video processing complete')
         print()
-        return text_list, embedding_list, page_list
+        return text_list, embedding_list, page_list, doc_list, doc_parent_list
     
     def ingest_text(self, query, query_variants, answer):
         text_list = []

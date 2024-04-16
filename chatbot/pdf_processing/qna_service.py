@@ -80,10 +80,10 @@ def upload_file():
         page_list = []
         # Extract text and page from the PDF
         if file.filename.endswith(".pdf"):
-            text_list, embedding_list, page_list, doc_list, doc_parent_list, origin_list = text_processor.extract_text_from_pdf(uploaded_file_path)
+            text_list, embedding_list, page_list, doc_list, doc_parent_list = text_processor.extract_text_from_pdf(uploaded_file_path)
         elif file.filename.endswith(".mp4"):
             print("@@@@@@@@@@@")
-            text_list, embedding_list, page_list, doc_list, doc_parent_list, origin_list = text_processor.extract_text_from_video(file.filename,uploaded_file_path)
+            text_list, embedding_list, page_list, doc_list, doc_parent_list = text_processor.extract_text_from_video(file.filename,uploaded_file_path)
         # Insert data into Milvus collection
         print('inseritng into collection')
         #    schema = CollectionSchema(fields=[document_id, page, page_page, embeddings, text], enable_dynamic_field=True)
