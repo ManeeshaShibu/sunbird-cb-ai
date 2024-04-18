@@ -113,7 +113,7 @@ class process_text(coref_impl):
                         doc_list.append(file_name)
                         text_list.append(text)
                         doc_parent_list.append(doc_parent)
-                        origin_list.append("course on portal")
+                        
                         # print(file_name)
                         # print(text)
                         embeddings = self.model.encode(text)

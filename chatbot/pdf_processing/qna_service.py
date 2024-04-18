@@ -96,8 +96,8 @@ def upload_file():
         print(len(page_list))
         print(len(doc_list))
         print(len(doc_parent_list))
-        print(len(origin_list))
-        collection.insert([ embedding_list, text_list, page_list, doc_list, doc_parent_list, origin_list])
+        
+        collection.insert([ embedding_list, text_list, page_list, doc_list, doc_parent_list])
         
         # Create an index on the "embeddings" field
         index_params = {
@@ -121,7 +121,7 @@ def upload_file():
         del collection
         del doc_list
         del doc_parent_list
-        del origin_list
+        
         gc.collect()
 
         return jsonify({'message': 'Data inserted into the collection.'}), 200
