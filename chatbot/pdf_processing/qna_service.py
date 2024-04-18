@@ -153,14 +153,14 @@ def search_answers():
     # Perform a search to get answers    
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
-                                      output_fields=["page", "page_page", "text"],
+                                      output_fields=["page", "page_page", "text", , "doc", "doc_parent"],
                                       limit=int(os.getenv('milvus_top_n_results', CONF["milvus_top_n_results"])), consistency_level="Strong")    
     print(search_results)
     # Extract relevant information from search results
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page})
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc, "Page" : r.entity.page, "document": r.entity.doc_parent})
     return jsonify({'answers_final': answers_final}), 200
 
 @app.route('/generate-answers', methods=['POST'])
@@ -196,7 +196,7 @@ def generate_answers():
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page})
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc, "Page" : r.entity.page, "document": r.entity.doc_parent})
 
     answers_final = sorted(answers_final, key=lambda x: x["similarity_distacne"], reverse=False)
     top_n = int(os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
