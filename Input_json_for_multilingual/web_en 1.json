@@ -157,7 +157,9 @@
         "notLikely": "Not likely",
         "extremelyLikely": "Extremely likely",
         "submit": "Submit",
-        "thanksForFeedback": "Thanks for the feedback. We are committed to consistently enhancing your learning experience."
+        "thanksForFeedback": "Thanks for the feedback. We are committed to consistently enhancing your learning experience.",
+        "makeItBetter": "How can we make it better for you next time?",
+        "inspireOthers": "Inspire others by sharing your positive experience"
     },
     "footercardnotify": {
         "forPersonalizedLearning": "For a personalized learning experience",
@@ -711,6 +713,7 @@
     "certificatedialog": {
         "downloadCertificate": "Download Certificate",
         "download": "Download",
+        "share": "Share",
         "pdf": "PDF",
         "png": "PNG",
         "svg": "SVG"
@@ -2055,6 +2058,17 @@
         "akshaySharmaRoles": "Young Professional",
         "rakshandaSinghThakurRoles": "Young Professional",
         "sampadaSinghRoles": "Young Professional"
+    },
+    "profileCertificateDialog": {
+        "aboutTheCourse": "About the course",
+        "viewCourse": "View Course",
+        "rejectedMessage": "This course has been retired.",
+        "rejectTooltip": "We periodically retire courses to keep the content relevant and in line with competency standards., The retired courses will no longer be accessible on the platform.",
+        "download": "Download",
+        "share": "Share",
+        "labelPDF": "PDF",
+        "labelPng": "PNG",
+        "labelSvg": "SVG"
     },
     "mobileApp": {}
     
