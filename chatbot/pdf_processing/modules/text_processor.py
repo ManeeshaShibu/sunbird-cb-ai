@@ -74,20 +74,12 @@ class process_text(coref_impl):
         doc_list = [] 
         doc_parent_list = []                          
         with open(pdf_path, 'rb') as pdf_file:
-            file_signature = self.doc_signature(pdf_file)
-            # print(pdf_path)
-            # print(pdf_file)
-            
-            print("***********************")
+            file_signature = self.doc_signature(pdf_file)            
             file_name=pdf_path.split("\\")[-1].split("__")[-1]
             doc_parent=pdf_path.split("\\")[-1].split("__")[0]
-            # print(file_name)
             pdf_content = self.pdf_processor.consume_pdf(pdf_path)
-            print("resolving coref per page")
             for page in pdf_content['pages']:
-                #cleanup
                 if page["is_outline"]:
-                    #skip the TOC pages
                     continue
                 text = page['text'].strip()
                 if page['header']:
@@ -96,40 +88,28 @@ class process_text(coref_impl):
                     text = text.replace(page['footer'], ' ')
                 if len(text.strip())<1:
                     continue
-
-                print(page["page_num"])
-                print(len(text))
                 pagenum = page["page_num"]
                 try:
                     text = self.coref_obj.fastcoref_impl(text)
-                    # print(text)
                     if len(text) <=  len(os.getenv('min_chunk_len', CONF["min_chunk_len"])):
                         continue
 
                     elif len(text) <= 1300:
-                        print("**************text len in page smaller than 1300")
-                        # print(type(pdf_file))
-                        
-                        doc_list.append(file_name)
+                        doc_list.append({"document":file_name})
                         text_list.append(text)
-                        doc_parent_list.append(doc_parent)
-                        
-                        # print(file_name)
-                        # print(text)
+                        doc_parent_list.append({"do_id":doc_parent})
                         embeddings = self.model.encode(text)
                         embedding_list.append(embeddings)
-                        page_list.append(pagenum)
+                        page_list.append({"doc_pagenum" : pagenum})
                     else:
-                        print("**************calling large text processor")
                         txt_list = self.process_large_text(text)
                         for text_chunk in txt_list:
-                            page = {"doc_pagenum" : pagenum}
                             embeddings = self.model.encode(text_chunk)
                             embedding_list.append(embeddings)
-                            page_list.append(page)
+                            page_list.append({"doc_pagenum" : pagenum})
                             text_list.append(text_chunk) #### added
-                            doc_list.append(file_name)
-                            doc_parent_list.append(doc_parent)
+                            doc_list.append({"document":file_name})
+                            doc_parent_list.append({"do_id":doc_parent})
                             
 
                 except Exception as e:
@@ -144,19 +124,15 @@ class process_text(coref_impl):
         print('video processing started')
         os.makedirs(".//audio_directory", exist_ok=True)
         audio_path=".//audio_directory//test_1.wav"
-        # video_path=r"C:\Users\Palash Ashok Bhosale\Jupy\Projects\Bot_NLP\pdff\test_video\coal_1.mp4"
         clip = mp.VideoFileClip(video_path, audio_fps=5500)
         clip.audio.write_audiofile(audio_path, codec='pcm_s16le')
         pipe = pipeline("automatic-speech-recognition", model="openai/whisper-large")
         out = pipe(audio_path)
         out['text']
-        text= out['text']
-
-                             
+        text= out['text']                             
         # aai.settings.api_key = "9bd4c3b823fd42ad9135fb8c8c0b7670"
         # transcriber = aai.Transcriber()
-        # transcript = transcriber.transcribe(video_path)
-        
+        # transcript = transcriber.transcribe(video_path)        
         text_list = []
         embedding_list = []
         page_list = []
@@ -166,9 +142,6 @@ class process_text(coref_impl):
         print("resolving coref per page")
         file_name=video_path.split("\\")[-1].split("__")[-1]
         doc_parent=video_path.split("\\")[-1].split("__")[0]
-        
-        # text = transcript.text.strip()
-        print(text)
         def gen():
             n=0
             while True:
@@ -180,34 +153,28 @@ class process_text(coref_impl):
         pagenum = next(page)
         try:
             text = self.coref_obj.fastcoref_impl(text)
-            # print(text)
 
             if len(text) <= 1300:
                 print("**************text len in page smaller than 1300")
                 print(type(file_name))
                 print(file_name)
-                
-                # page = {"doc_pagenum" : pagenum}
                 text_list.append(text)
-                # print(file_name)
-                # print(text)
                 embeddings = self.model.encode(text)
                 embedding_list.append(embeddings)
-                page_list.append(pagenum)
-                doc_list.append(file_name)
-                doc_parent_list.append(doc_parent)
+                page_list.append({"doc_pagenum" : pagenum})
+                doc_list.append({"document":file_name})
+                doc_parent_list.append({"do_id":doc_parent})
                 
             else:
                 print("**************calling large text processor")
                 text_list = self.process_large_text(text)
                 print("$$$$$$$$$$$" + str(len(text_list)))
                 for text_chunk in text_list:
-                    page = {"doc_pagenum" : pagenum}
                     embeddings = self.model.encode(text_chunk)
                     embedding_list.append(embeddings)
-                    page_list.append(page)
-                    doc_list.append(file_name)
-                    doc_parent_list.append(doc_parent)
+                    page_list.append({"doc_pagenum" : pagenum})
+                    doc_list.append({"document":file_name})
+                    doc_parent_list.append({"do_id":doc_parent})
                     
 
         except Exception as e:
