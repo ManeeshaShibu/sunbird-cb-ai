@@ -2065,7 +2065,10 @@
         "rejectedMessage": "This course has been retired.",
         "rejectTooltip": "We periodically retire courses to keep the content relevant and in line with competency standards., The retired courses will no longer be accessible on the platform.",
         "download": "Download",
-        "share": "Share"
+        "share": "Share",
+        "labelPDF": "PDF",
+        "labelPng": "PNG",
+        "labelSvg": "SVG"
     },
     "mobileApp": {}
     
