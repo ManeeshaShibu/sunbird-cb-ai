@@ -54,6 +54,10 @@
             max-width: 70%;
             word-wrap: break-word;
             float: left;
+            margin-bottom: 20px; /* Increased margin */
+            position: relative;
+            clear: both;
+            padding-bottom: 20px; /* Added padding */
         }
 
         .reference-content {
@@ -62,8 +66,8 @@
             background-color: #f0f0f0;
             border-radius: 5px;
             display: none;
-            
         }
+
         .reference-content p{
             color:#000000;
             margin: 5px 0;
@@ -91,6 +95,7 @@
             border-radius: 20px;
             border: 1px solid #ccc;
             margin-right: 10px;
+            margin-bottom: 10px; /* Added margin */
         }
 
         .input-container input[type="submit"] {
@@ -100,6 +105,37 @@
             background-color: #007bff;
             color: #fff;
             cursor: pointer;
+            margin-bottom: 10px; /* Added margin */
+        }
+
+        .feedback-window {
+            margin-top: 10px; /* Adjusted margin */
+            margin-bottom: 10px; /* Added margin */
+            font-size: 12px;
+            color: #666;
+        }
+
+        .feedback-buttons {
+            margin-top: 10px;
+        }
+
+        .feedback-buttons button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Adjust the styles for good and bad buttons as needed */
+        .feedback-buttons .good-feedback {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .feedback-buttons .bad-feedback {
+            background-color: #dc3545;
+            color: #fff;
         }
     </style>
 </head>
@@ -161,6 +197,42 @@
 
                         chatMessages.appendChild(botMessage);
 
+                        // Add feedback window
+                        var feedbackWindow = document.createElement('div');
+                        feedbackWindow.classList.add('feedback-window');
+                        feedbackWindow.textContent = "How helpful was this answer?";
+                        botMessage.appendChild(feedbackWindow);
+
+                        // Add input box for feedback
+                        var feedbackInput = document.createElement('input');
+                        feedbackInput.type = "text";
+                        feedbackInput.placeholder = "Provide feedback...";
+                        botMessage.appendChild(feedbackInput);
+
+                        // Add good and bad feedback buttons
+                        var feedbackButtons = document.createElement('div');
+                        feedbackButtons.classList.add('feedback-buttons');
+
+                        var goodFeedbackBtn = document.createElement('button');
+                        goodFeedbackBtn.textContent = "Good";
+                        goodFeedbackBtn.classList.add('good-feedback');
+                        goodFeedbackBtn.addEventListener('click', function() {
+                            sendFeedback("good", userInput, response);
+                            feedbackInput.value = ''; // Clear feedback input
+                        });
+                        feedbackButtons.appendChild(goodFeedbackBtn);
+
+                        var badFeedbackBtn = document.createElement('button');
+                        badFeedbackBtn.textContent = "Bad";
+                        badFeedbackBtn.classList.add('bad-feedback');
+                        badFeedbackBtn.addEventListener('click', function() {
+                            sendFeedback("bad", userInput, response);
+                            feedbackInput.value = ''; // Clear feedback input
+                        });
+                        feedbackButtons.appendChild(badFeedbackBtn);
+
+                        botMessage.appendChild(feedbackButtons);
+
                         // Toggle reference content visibility
                         botMessage.querySelector('.expand-reference').addEventListener('click', function() {
                             var referenceContent = botMessage.querySelector('.reference-content');
@@ -177,6 +249,24 @@
             // Clear user input
             document.getElementById('user-input').value = '';
         });
+
+        function sendFeedback(feedbackText, ques, ans) {
+            var xhr = new XMLHttpRequest();
+            var feedbackUrl = 'http://localhost:3000/gather/feedback';
+            xhr.open('POST', feedbackUrl, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        console.log('Feedback submitted successfully.');
+                    } else {
+                        console.error('Error submitting feedback:', xhr.statusText);
+                    }
+                }
+            };
+            var feedbackData = JSON.stringify({ feedback: feedbackText, question: ques, answer: ans });
+            xhr.send(feedbackData);
+        }
     </script>
 </body>
 </html>

@@ -15,13 +15,14 @@ To run this UI locally, follow these steps:
 ```bash
 npm install axios
 npm install express
+npm install elasticsearch
 
 
 ### Start the Node.js Proxy Server
 
 Run the following command to start the proxy server:
 
-node node_proxy.js
+node --env-file=.env node_proxy.js
 
 
 ### Open the UI and start interacting

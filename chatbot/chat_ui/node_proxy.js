@@ -1,6 +1,6 @@
 const express = require('express');
 const axios = require('axios');
-
+var es = require('./modules/es/persist')
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -19,6 +19,27 @@ app.post('/proxy', async (req, res) => {
     try {
         const response = await axios.post(req.body.url, req.body.data);
         res.json(response.data);
+    } catch (error) {
+        console.error(error);
+        res.json({"generated_ans" : "proxy server: failed to connect to backend"});
+        //res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/gather/feedback', async (req, res) => {
+    try {
+        console.log(req.body.feedback)
+        console.log(req.body.question)
+        console.log(req.body.answer)
+        console.log(req.body.machine_id)
+        es.saveToEDB(req.body, req.body.machine_id, req.body.machine_id, (err, res)=>{
+            if(err){
+                console.log(err)
+            }else{
+                console.log(res)
+            }
+        })
+        res.sendStatus(200)
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
