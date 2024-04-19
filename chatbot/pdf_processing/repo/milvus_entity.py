@@ -20,9 +20,9 @@ class milvus_collection:
         document_id = FieldSchema(name='document_id', dtype=DataType.INT64, is_primary=True, auto_id=True)
         text = FieldSchema(name='text', dtype=DataType.VARCHAR, max_length=60000)
         embeddings = FieldSchema(name='embeddings', dtype=DataType.FLOAT_VECTOR, dim=384)
-        page = FieldSchema(name='page', dtype=DataType.JSON, max_length=100)
-        doc = FieldSchema(name='doc_name', dtype=DataType.JSON, max_length=100)
-        doc_parent = FieldSchema(name='doc_parent', dtype=DataType.JSON, max_length=100)       
+        page = FieldSchema(name='page', dtype=DataType.VARCHAR, max_length=100)
+        doc = FieldSchema(name='doc_name', dtype=DataType.VARCHAR, max_length=100)
+        doc_parent = FieldSchema(name='doc_parent', dtype=DataType.VARCHAR, max_length=100)       
         
         
         schema = CollectionSchema(fields=[document_id, embeddings, text, page, doc, doc_parent], enable_dynamic_field=True)
