@@ -95,21 +95,21 @@ class process_text(coref_impl):
                         continue
 
                     elif len(text) <= 1300:
-                        doc_list.append({"document":file_name})
+                        doc_list.append(file_name)
                         text_list.append(text)
-                        doc_parent_list.append({"do_id":doc_parent})
+                        doc_parent_list.append(doc_parent)
                         embeddings = self.model.encode(text)
                         embedding_list.append(embeddings)
-                        page_list.append({"doc_pagenum" : pagenum})
+                        page_list.append(pagenum)
                     else:
                         txt_list = self.process_large_text(text)
                         for text_chunk in txt_list:
                             embeddings = self.model.encode(text_chunk)
                             embedding_list.append(embeddings)
-                            page_list.append({"doc_pagenum" : pagenum})
+                            page_list.append(pagenum)
                             text_list.append(text_chunk) #### added
-                            doc_list.append({"document":file_name})
-                            doc_parent_list.append({"do_id":doc_parent})
+                            doc_list.append(file_name)
+                            doc_parent_list.append(doc_parent)
                             
 
                 except Exception as e:
@@ -161,9 +161,9 @@ class process_text(coref_impl):
                 text_list.append(text)
                 embeddings = self.model.encode(text)
                 embedding_list.append(embeddings)
-                page_list.append({"doc_pagenum" : pagenum})
-                doc_list.append({"document":file_name})
-                doc_parent_list.append({"do_id":doc_parent})
+                page_list.append(pagenum)
+                doc_list.append(file_name)
+                doc_parent_list.append(doc_parent)
                 
             else:
                 print("**************calling large text processor")
@@ -172,9 +172,9 @@ class process_text(coref_impl):
                 for text_chunk in text_list:
                     embeddings = self.model.encode(text_chunk)
                     embedding_list.append(embeddings)
-                    page_list.append({"doc_pagenum" : pagenum})
-                    doc_list.append({"document":file_name})
-                    doc_parent_list.append({"do_id":doc_parent})
+                    page_list.append(pagenum)
+                    doc_list.append(file_name)
+                    doc_parent_list.append(doc_parent)
                     
 
         except Exception as e:
