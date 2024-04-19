@@ -76,7 +76,7 @@ class process_text(coref_impl):
         with open(pdf_path, 'rb') as pdf_file:
             file_signature = self.doc_signature(pdf_file)            
             file_name=pdf_path.split("\\")[-1].split("__")[-1]
-            doc_parent=pdf_path.split("\\")[-1].split("__")[0]
+            doc_parent=pdf_path.split("\\")[-1].split("__")[0].split("/")[-1]
             pdf_content = self.pdf_processor.consume_pdf(pdf_path)
             for page in pdf_content['pages']:
                 if page["is_outline"]:
@@ -141,7 +141,7 @@ class process_text(coref_impl):
         
         print("resolving coref per page")
         file_name=video_path.split("\\")[-1].split("__")[-1]
-        doc_parent=video_path.split("\\")[-1].split("__")[0]
+        doc_parent=video_path.split("\\")[-1].split("__")[0].split("/")[-1]
         def gen():
             n=0
             while True:
