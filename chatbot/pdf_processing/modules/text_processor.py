@@ -100,13 +100,13 @@ class process_text(coref_impl):
                         doc_parent_list.append(doc_parent)
                         embeddings = self.model.encode(text)
                         embedding_list.append(embeddings)
-                        page_list.append(pagenum)
+                        page_list.append(str(pagenum))
                     else:
                         txt_list = self.process_large_text(text)
                         for text_chunk in txt_list:
                             embeddings = self.model.encode(text_chunk)
                             embedding_list.append(embeddings)
-                            page_list.append(pagenum)
+                            page_list.append(str(pagenum))
                             text_list.append(text_chunk) #### added
                             doc_list.append(file_name)
                             doc_parent_list.append(doc_parent)
@@ -161,7 +161,7 @@ class process_text(coref_impl):
                 text_list.append(text)
                 embeddings = self.model.encode(text)
                 embedding_list.append(embeddings)
-                page_list.append(pagenum)
+                page_list.append(str(pagenum))
                 doc_list.append(file_name)
                 doc_parent_list.append(doc_parent)
                 
@@ -172,7 +172,7 @@ class process_text(coref_impl):
                 for text_chunk in text_list:
                     embeddings = self.model.encode(text_chunk)
                     embedding_list.append(embeddings)
-                    page_list.append(pagenum)
+                    page_list.append(str(pagenum))
                     doc_list.append(file_name)
                     doc_parent_list.append(doc_parent)
                     
