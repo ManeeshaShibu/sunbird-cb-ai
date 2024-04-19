@@ -19,7 +19,7 @@ app = Flask(__name__)
 nlp_model = spacy.load("en_core_web_sm")
 transformer_model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
 text_processor_preloaded = process_text(nlp_model, transformer_model)
-faq_obj = faq()
+# faq_obj = faq()
 milvus = milvus_collection()
 print("start")
 CONF = None
