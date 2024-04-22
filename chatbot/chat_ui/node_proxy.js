@@ -11,7 +11,13 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    next();
+    if (req.method === 'OPTIONS') {
+        // Respond to preflight requests
+        res.sendStatus(200);
+    } else {
+        // Continue to next middleware
+        next();
+    }
 });
 
 // Proxy endpoint
