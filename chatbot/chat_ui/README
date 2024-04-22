@@ -22,6 +22,10 @@ npm install elasticsearch
 
 Run the following command to start the proxy server:
 
+set ES environment variables
+ export APP_ES_HOST=1.2.3.4
+ export APP_ES_PORT=9200
+
 node --env-file=.env node_proxy.js
 
 
