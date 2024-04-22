@@ -161,7 +161,7 @@ def search_answers():
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc, "Page" : r.entity.page, "document": r.entity.doc_parent})
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page, "document": r.entity.doc_name})
     return jsonify({'answers_final': answers_final}), 200
 
 @app.route('/generate-answers', methods=['POST'])
@@ -197,8 +197,8 @@ def generate_answers():
     answers_final = []
     for result in search_results:
         for r in result:
-            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc, "Page" : r.entity.page, "document": r.entity.doc_parent})
-
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page, "document": r.entity.doc_name})
+ 
     answers_final = sorted(answers_final, key=lambda x: x["similarity_distacne"], reverse=False)
     top_n = int(os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
     context = ""
