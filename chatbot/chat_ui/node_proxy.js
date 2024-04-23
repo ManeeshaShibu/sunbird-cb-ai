@@ -22,6 +22,8 @@ app.use((req, res, next) => {
 
 // Proxy endpoint
 app.post('/proxy', async (req, res) => {
+    console.log('got the request.....')
+    console.log(req.body)
     try {
         const response = await axios.post(req.body.url, req.body.data);
         res.json(response.data);
