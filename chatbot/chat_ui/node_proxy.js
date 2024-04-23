@@ -40,7 +40,8 @@ app.post('/gather/feedback', async (req, res) => {
         console.log(req.body.question)
         console.log(req.body.answer)
         console.log(req.body.machine_id)
-        es.saveToEDB(req.body, req.body.machine_id, req.body.machine_id, (err, res)=>{
+        console.log(req.body.userName)
+        es.saveToEDB(req.body, req.body.user_name, req.body.machine_id, (err, res)=>{
             if(err){
                 console.log(err)
             }else{

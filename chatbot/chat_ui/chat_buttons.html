@@ -140,6 +140,43 @@
     </style>
 </head>
 <body>
+
+    <script>
+        // Function to prompt user for their name and store it in local storage
+        function promptForName() {
+            var userName = prompt("Please enter your name:");
+            if (userName) {
+                localStorage.setItem('userName', userName);
+                return userName;
+            } else {
+                return null; // User cancelled prompt
+            }
+        }
+
+        // Function to retrieve user's name from local storage
+        function getUserName() {
+            return localStorage.getItem('userName');
+        }
+
+        // Function to display user's name at the top of the page
+        function displayUserName() {
+            var userName = getUserName();
+            if (userName) {
+                var userNameElement = document.createElement('div');
+                userNameElement.textContent = 'Welcome, ' + userName + '!';
+                document.body.insertBefore(userNameElement, document.body.firstChild);
+            }
+        }
+
+        // Check if user's name exists in local storage, if not, prompt for it
+        if (!getUserName()) {
+            promptForName();
+        }
+        
+
+        // Display user's name at the top of the page
+        displayUserName();
+    </script>
     <div class="chat-container">
         <div class="chat-messages" id="chat-messages"></div>
         <form id="chat-form" class="input-container">
@@ -149,6 +186,23 @@
     </div>
 
     <script>
+
+         // Generate machine ID function
+         function generateMachineID() {
+            var randomID = Math.random().toString(36).substr(2, 10); // Random string
+            var timestamp = new Date().getTime(); // Timestamp
+            var machineID = randomID + timestamp;
+            return machineID;
+        }
+
+        // Store machine ID in local storage
+        var machineID = localStorage.getItem('machineID');
+        var userName = localStorage.getItem('userName');
+        if (!machineID) {
+            machineID = generateMachineID();
+            localStorage.setItem('machineID', machineID);
+        }
+
         document.getElementById('chat-form').addEventListener('submit', function(event) {
             event.preventDefault();
             var userInput = document.getElementById('user-input').value.trim();
@@ -162,7 +216,7 @@
 
             // Make a POST request to the local Node.js server acting as a CORS proxy
             var xhr = new XMLHttpRequest();
-            var proxyUrl = 'http://localhost:3000/proxy'; // Local Node.js server URL
+            var proxyUrl = 'https://portal.karmayogi.nic.in/testpdf/proxy'; // Local Node.js server URL
             var targetUrl = 'http://localhost:5000/generate-answers'; // Target URL
             xhr.open('POST', proxyUrl, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -204,10 +258,10 @@
                         botMessage.appendChild(feedbackWindow);
 
                         // Add input box for feedback
-                        var feedbackInput = document.createElement('input');
-                        feedbackInput.type = "text";
-                        feedbackInput.placeholder = "Provide feedback...";
-                        botMessage.appendChild(feedbackInput);
+                        //var feedbackInput = document.createElement('input');
+                        //feedbackInput.type = "text";
+                        //feedbackInput.placeholder = "Provide feedback...";
+                        //botMessage.appendChild(feedbackInput);
 
                         // Add good and bad feedback buttons
                         var feedbackButtons = document.createElement('div');
@@ -217,8 +271,8 @@
                         goodFeedbackBtn.textContent = "Good";
                         goodFeedbackBtn.classList.add('good-feedback');
                         goodFeedbackBtn.addEventListener('click', function() {
-                            sendFeedback("good", userInput, response);
-                            feedbackInput.value = ''; // Clear feedback input
+                            sendFeedback("good", userInput, response, machineID, userName);
+                            //feedbackInput.value = ''; // Clear feedback input
                         });
                         feedbackButtons.appendChild(goodFeedbackBtn);
 
@@ -226,8 +280,8 @@
                         badFeedbackBtn.textContent = "Bad";
                         badFeedbackBtn.classList.add('bad-feedback');
                         badFeedbackBtn.addEventListener('click', function() {
-                            sendFeedback("bad", userInput, response);
-                            feedbackInput.value = ''; // Clear feedback input
+                            sendFeedback("bad", userInput, response, machineID, userName);
+                            //feedbackInput.value = ''; // Clear feedback input
                         });
                         feedbackButtons.appendChild(badFeedbackBtn);
 
@@ -250,9 +304,9 @@
             document.getElementById('user-input').value = '';
         });
 
-        function sendFeedback(feedbackText, ques, ans) {
+        function sendFeedback(feedbackText, ques, ans, machineID, userName) {
             var xhr = new XMLHttpRequest();
-            var feedbackUrl = 'http://localhost:3000/gather/feedback';
+            var feedbackUrl = 'https://portal.karmayogi.nic.in/testpdf/gather/feedback';
             xhr.open('POST', feedbackUrl, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.onreadystatechange = function() {
@@ -264,7 +318,8 @@
                     }
                 }
             };
-            var feedbackData = JSON.stringify({ feedback: feedbackText, question: ques, answer: ans });
+            var feedbackData = JSON.stringify({ feedback: feedbackText, question: ques, answer: ans, machine_id: machineID, user_name: userName  });
+            
             xhr.send(feedbackData);
         }
     </script>
