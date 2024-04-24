@@ -1955,11 +1955,11 @@
         "numtext":"9876543210",
         "mailtext":"Mail",
         "numbertext":"Number",
-        "yourNametext":"Your Name",
-        "yourEmailtext":"Your Email",
-        "yourNumbertext":" Your Number",
-        "yourFeedbacktext":"Your Feedback",
-        "refreshtext":"Refresh"
+        "placeholderText1":"Your Name",
+        "placeholderText2":"Your Email",
+        "placeholderText3":" Your Number",
+        "placeholderText4":"Your Feedback",
+        "placeholderText5":"Refresh"
     },
     "aboutUsPage": {
         "title": "About Us",
