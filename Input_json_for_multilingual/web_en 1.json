@@ -1820,7 +1820,7 @@
         "confirmationNeeded": "Confirmation Needed",
         "delete": "Delete",
         "edit": "Edit",
-        "confirmToDeleteRoles:": "Do you want to delete the role and associated activities?"
+        "confirmToDeleteRoles:": "Do you want to delete the role and associcontactated activities?"
     },
     "dialogconfirm" : {
         "yes" : "Yes",
@@ -1954,7 +1954,12 @@
         "mail":"support.karmayogi@gov.in",
         "numtext":"9876543210",
         "mailtext":"Mail",
-        "numbertext":"Number"
+        "numbertext":"Number",
+        "yourNametext":"Your Name",
+        "yourEmailtext":"Your Email",
+        "yourNumbertext":" Your Number",
+        "yourFeedbacktext":"Your Feedback",
+        "refreshtext":"Refresh"
     },
     "aboutUsPage": {
         "title": "About Us",
