@@ -1820,7 +1820,7 @@
         "confirmationNeeded": "Confirmation Needed",
         "delete": "Delete",
         "edit": "Edit",
-        "confirmToDeleteRoles:": "Do you want to delete the role and associcontactated activities?"
+        "confirmToDeleteRoles:": "Do you want to delete the role and associated activities?"
     },
     "dialogconfirm" : {
         "yes" : "Yes",
