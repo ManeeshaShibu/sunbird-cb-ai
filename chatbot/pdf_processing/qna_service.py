@@ -190,7 +190,7 @@ def generate_answers():
     # Perform a search to get answers
     search_results = collection.search(data=[query_encode], anns_field="embeddings",
                                       param={"metric": "L2", "offset": 0},
-                                      output_fields=["page", "page_page", "text"],
+                                      output_fields=["page", "page_page", "text", "doc_name", "doc_parent"],
                                       limit=10, consistency_level="Strong")
     
     
