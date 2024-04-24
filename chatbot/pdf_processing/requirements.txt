@@ -113,3 +113,4 @@ whisper==1.1.10
 ffmpeg==1.4
 ffmpeg-python==0.2.0
 imageio-ffmpeg==0.4.9
+ctransformers==0.2.27

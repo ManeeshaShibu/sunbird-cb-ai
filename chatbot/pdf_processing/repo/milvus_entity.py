@@ -3,7 +3,13 @@ from pymilvus import CollectionSchema, FieldSchema, DataType, Collection, connec
 import json
 import os
 # factor in multiple connections
+from ctransformers import AutoModelForCausalLM,AutoConfig
 
+config = AutoConfig.from_pretrained("TheBloke/Mistral-7B-v0.1-GGUF")
+# Explicitly set the max_seq_len
+config.config.max_new_tokens = 2048
+config.config.context_length = 4096
+config.config.temperature=0.70
 class milvus_collection:
 
     collection = None

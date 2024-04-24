@@ -13,6 +13,9 @@ import json
 from modules.generative_model import answer_generation
 from sentence_transformers import SentenceTransformer
 import gc
+ # added mistral_config.py to store config for mistral model
+from ctransformers import AutoModelForCausalLM # loading Mistral
+
 
 app = Flask(__name__)
 
@@ -216,6 +219,66 @@ def generate_answers():
     generated_ans = generate_answer.openai_answer(query,context)
 
     return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:top_n]}), 200
+###############################
+###############################
+@app.route('/mistral-answers', methods=['POST'])
+def generate_answers():
+    data = request.get_json()
+    print(data)
+    #collection_name = data.get('collection_name', '')
+    collection_name = os.getenv('milvus_collection_name', CONF["milvus_collection_name"])
+    query = data.get('query', '')
+    clean_query = text_processor_preloaded.clean_text(query)
+    faq_response, faq_score = faq_obj.query(clean_query)
+
+    if faq_response and faq_score > float(os.getenv('faq_cutoff_direct', CONF["faq_cutoff_direct"])):
+        return faq_response, 200 
+    
+    print(collection_name)
+    print(query)
+    # Define and load the Milvus collection
+    collection = milvus.get_collection()
+    collection.load()
+    print("Collections loaded.")
+
+    # Encode the query
+    query_encode = text_processor_preloaded.get_model().encode(query.lower())
+
+    # Perform a search to get answers
+    search_results = collection.search(data=[query_encode], anns_field="embeddings",
+                                      param={"metric": "L2", "offset": 0},
+                                      output_fields=["page", "page_page", "text", "doc_name", "doc_parent"],
+                                      limit=10, consistency_level="Strong")
+    
+    
+    answers_final = []
+    for result in search_results:
+        for r in result:
+            answers_final.append({"text-chunk" : r.entity.text, "similarity_distacne" : r.distance, "do_id" : r.entity.doc_parent, "Page" : r.entity.page, "document": r.entity.doc_name})
+ 
+    answers_final = sorted(answers_final, key=lambda x: x["similarity_distacne"], reverse=False)
+    top_n = int(os.getenv('top_matching_chunks_as_context', CONF["top_matching_chunks_as_context"]))
+    context = ""
+    for answer in answers_final[:top_n]:
+        print(answer['text-chunk'])
+        context = context + "          " + answer['text-chunk']
+    
+    if faq_score > float(os.getenv('faq_cutoff_overall', CONF["faq_cutoff_overall"])):
+        context = context + "          " + faq_response['generated_ans']["text-chunk"] + " " + faq_response['generated_ans']["answer"]["answer"]
+
+    #print(search_results)
+   
+    # Extract relevant information from search results
+    #answers_final = '               '.join(answers_final)
+    
+    prompt= CONF["generative_model_prompt"] + context +"}. Now answer my Question which is:" + query
+    llm = AutoModelForCausalLM.from_pretrained("TheBloke/Mistral-7B-v0.1-GGUF", model_file="mistral-7b-v0.1.Q5_K_M.gguf", model_type="mistral",gpu_layers=0, config=milvus.redefined_config())
+    
+    generated_ans = llm(prompt)
+
+    return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:top_n]}), 200
+
+
 if __name__ == '__main__':
     print("running on 5000 port")
     app.run(debug=False, host='0.0.0.0', port=5000)
