@@ -11,11 +11,19 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    next();
+    if (req.method === 'OPTIONS') {
+        // Respond to preflight requests
+        res.sendStatus(200);
+    } else {
+        // Continue to next middleware
+        next();
+    }
 });
 
 // Proxy endpoint
 app.post('/proxy', async (req, res) => {
+    console.log('got the request.....')
+    console.log(req.body)
     try {
         const response = await axios.post(req.body.url, req.body.data);
         res.json(response.data);
@@ -32,7 +40,8 @@ app.post('/gather/feedback', async (req, res) => {
         console.log(req.body.question)
         console.log(req.body.answer)
         console.log(req.body.machine_id)
-        es.saveToEDB(req.body, req.body.machine_id, req.body.machine_id, (err, res)=>{
+        console.log(req.body.userName)
+        es.saveToEDB(req.body, req.body.user_name, req.body.machine_id, (err, res)=>{
             if(err){
                 console.log(err)
             }else{
