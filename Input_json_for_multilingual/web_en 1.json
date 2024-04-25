@@ -2141,6 +2141,7 @@
         "chooseOrganization": "Choose an Organization",
         "transferHeader": "Change Organization to make a transfer request.",
         "transferWarnMsg": "If you make a transfer request, your profile will need verification again.",
+        "withdrawTransferToolTip": "Click here to withdraw your transfer request. You can submit your request again",
         "otpHeaderText": "Enter the OTP sent to your",
         "enterOTP": "Enter OTP",
         "enterTheOTP": "Enter the OTP",
