@@ -2182,7 +2182,7 @@
         "OTPSentSuccess": "OTP verification done successfully!",
         "OTPVerifyFailed": "OTP verification failed! Please try again later!",
         "withdrawTransferSuccess": "Withdraw transfer request done successfully!",
-        "withdrawTransferFailed": "Unable to withdraw transfer request for"
+        "withdrawTransferFailed": "Unable to withdraw transfer request, please try again later!"
     },
     "mobileApp": {}
 }
