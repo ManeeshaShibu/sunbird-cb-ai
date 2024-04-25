@@ -218,7 +218,11 @@ def generate_answers():
    
     # Extract relevant information from search results
     #answers_final = '               '.join(answers_final)
-    generated_ans = generate_answer.openai_answer(query,context)
+    generated_ans = []
+    if os.getenv('model', CONF["model"]) == "openai":
+        generated_ans = generate_answer.openai_answer(query,context)
+    else:
+        generated_ans = generate_answer.mistral_answer(query,context)
 
     return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:top_n]}), 200
 ###############################

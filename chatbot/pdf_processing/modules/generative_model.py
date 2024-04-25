@@ -1,7 +1,7 @@
 import os
 from openai import OpenAI
 import json
-
+import requests
 class answer_generation:
 
     def __init__(self) -> None:
@@ -28,6 +28,22 @@ class answer_generation:
             model=os.getenv('generative_model', self.conf["generative_model"]),
         )
         return chat_completion.choices[0].message.content
+
+    def mistral_answer(self, query, context):
+        mistral_endpoint = os.getenv('mistral_endpoint', self.conf["mistral_endpoint"])
+        prompt = os.getenv('generative_model_prompt', self.conf["generative_model_prompt"])
+        prompt= prompt + context +"}. Now answer my Question which is:" + query
+        print(prompt)
+        payload = json.dumps({
+            "model": "mistral",
+            "prompt": prompt,
+            "stream": False
+            })
+        headers = {
+            'Content-Type': 'application/json'
+            }
+        response = requests.request("POST", mistral_endpoint, headers=headers, data=payload)
+        return response.text
 
         
     def generate_similar_sentences(self, text):

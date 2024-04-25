@@ -11,9 +11,10 @@
     "generative_model":"gpt-3.5-turbo",
     "similarity_distance_cutoff_faq": 30,
     "similarity_distance_cutoff_min": 55,
-    "haystack_faq_cutoff": 0.8,
+    "faq_cutoff_direct" : 0.98,
+    "faq_cutoff_overall" : 0.90,
+    "haystack_faq_cutoff" : 0.8,
     "faq_url_ingest" : "http://localhost:5001/ingest/faq",
     "faq_url_query" : "http://localhost:5001/faq/query",
-    "faq_cutoff_direct" : 0.98,
-    "faq_cutoff_overall" : 0.90
+    "mistral_endpoint": "http://localhost:11434/api/generate"
 }
