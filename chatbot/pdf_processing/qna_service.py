@@ -5,7 +5,7 @@ import re
 import PyPDF2
 import torch.nn.functional as F
 from modules.coref_resolver import coref_impl
-from repo.milvus_entity import milvus_collection
+from repo.milvus_entity import *
 from modules.text_processor import process_text
 from modules.faq_handler import faq
 import pandas as pd
@@ -29,6 +29,8 @@ CONF = None
 with open('conf/config.json') as config_file:
     CONF = json.load(config_file)
 
+
+llm = AutoModelForCausalLM.from_pretrained("TheBloke/Mistral-7B-v0.1-GGUF", model_file="mistral-7b-v0.1.Q5_K_M.gguf", model_type="mistral",gpu_layers=0, config=redefined_config())
 # Create 'upload_folder' directory if it doesn't exist
 if not os.path.exists('upload_folder'):
     os.makedirs('upload_folder')
@@ -222,7 +224,7 @@ def generate_answers():
 ###############################
 ###############################
 @app.route('/mistral-answers', methods=['POST'])
-def generate_answers():
+def generate_mistral_answers():
     data = request.get_json()
     print(data)
     #collection_name = data.get('collection_name', '')
@@ -271,11 +273,14 @@ def generate_answers():
     # Extract relevant information from search results
     #answers_final = '               '.join(answers_final)
     
+    # prompt= CONF["generative_model_prompt"] + context +"}. Now answer my Question which is:" + query
+    print("before prompt")
+    # llm = AutoModelForCausalLM.from_pretrained("TheBloke/Mistral-7B-v0.1-GGUF", model_file="mistral-7b-v0.1.Q5_K_M.gguf", model_type="mistral",gpu_layers=0, config=redefined_config())
     prompt= CONF["generative_model_prompt"] + context +"}. Now answer my Question which is:" + query
-    llm = AutoModelForCausalLM.from_pretrained("TheBloke/Mistral-7B-v0.1-GGUF", model_file="mistral-7b-v0.1.Q5_K_M.gguf", model_type="mistral",gpu_layers=0, config=milvus.redefined_config())
-    
+    print("before llm")
     generated_ans = llm(prompt)
-
+    print("after llm")
+    print(generated_ans)
     return jsonify({'generated_ans': generated_ans, 'closest context' : answers_final[:top_n]}), 200
 
 
