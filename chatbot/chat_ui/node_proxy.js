@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
-var es = require('./modules/es/persist')
+var es = require('./modules/es/persist');
+const path = require('path'); // Import path module
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -19,6 +20,9 @@ app.use((req, res, next) => {
         next();
     }
 });
+
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Proxy endpoint
 app.post('/proxy', async (req, res) => {
