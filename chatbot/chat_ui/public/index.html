@@ -216,8 +216,10 @@
 
             // Make a POST request to the local Node.js server acting as a CORS proxy
             var xhr = new XMLHttpRequest();
-            var proxyUrl = 'https://portal.karmayogi.nic.in/testpdf/proxy'; // Local Node.js server URL
-            var targetUrl = 'http://localhost:5000/generate-answers'; // Target URL
+            var proxyUrl = 'http://localhost:3000/proxy'; // Local Node.js server URL
+            var targetUrl = 'https://portal.karmayogi.nic.in/pdf-processing/generate-answers'; // Target URL
+            //var proxyUrl = 'https://portal.karmayogi.nic.in/testpdf/proxy'; // Local Node.js server URL
+            //var targetUrl = 'http://localhost:5000/generate-answers'; // Target URL
             xhr.open('POST', proxyUrl, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             
@@ -232,10 +234,9 @@
                         if (Array.isArray(response['closest context'])) {
                             // If it's an array, assume it's a context-based response
                             var contextParagraphs = response['closest context'].map(function(chunk) {
-                                return '<p><p style="background-color: yellow;">' + chunk['text-chunk'] + '</p></p>';
+                                return '<p><p style="background-color: yellow;">' + chunk['do_id'] + '(' + chunk['text-chunk'] + '...)' + chunk['document'] + '</p></p>';
                             }).join('');
-
-                            botMessage.innerHTML = '<div class="bot-message">' + response.generated_ans + 
+                            botMessage.innerHTML = '<div class="bot-message">' + JSON.parse(response.generated_ans)['response'] + 
                                                     '<span class="expand-reference"> (Context)</span>' +
                                                     '<div class="reference-content">' +
                                                     contextParagraphs +
