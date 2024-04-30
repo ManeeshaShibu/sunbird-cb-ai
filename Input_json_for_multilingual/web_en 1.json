@@ -2182,7 +2182,23 @@
         "OTPSentSuccess": "OTP verification done successfully!",
         "OTPVerifyFailed": "OTP verification failed! Please try again later!",
         "withdrawTransferSuccess": "Withdraw transfer request done successfully!",
-        "withdrawTransferFailed": "Unable to withdraw transfer request, please try again later!"
+        "withdrawTransferFailed": "Unable to withdraw transfer request, please try again later!",
+        "invalidEmail": "Please enter a valid email address",
+        "pleaseEnterValidMobileNumber": "Please enter a valid mobile number",
+        "invalidPinCode": "Please enter a valid Pincode",
+        "start":"Start",
+        "userName": "Username",
+        "password": "Password",
+        "showAll": "Show all",
+        "upcomingAssessments": "Upcoming Assessments",
+        "yourStats": "Your stats",
+        "myDiscussions": "My Discussions",
+        "myLearnings": "My Learnings",
+        "assessmentDataFail": "Unable to get assessment data, please try again later!",
+        "insightsDataFail": "Unable to get Insights data, please try again later!",
+        "discussionsDataFail": "Unable to get discussions data, please try again later!",
+        "hideCredentials": "Hide my credentials",
+        "viewCredentials": "View my credentials"
     },
     "mobileApp": {}
 }
