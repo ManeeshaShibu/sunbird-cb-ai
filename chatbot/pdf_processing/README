@@ -1,0 +1,35 @@
+# An integrated service that hosts APIs for ingesting documents and providing matching chunks against a query
+
+# runnig milvus DB using docker locally
+
+    - navigate to milvus folder
+    - docker-compose up -d
+
+# qna_service.py is the starting point of the service
+
+# code is arranged into modules, repos and config folders.
+    - module has different sub services
+    - repo has DB handling code
+    - config has configuration used
+
+# How to run
+
+- create a new python environment with python version 3.9.17
+- install all the dependencies using "pip -r requirements.txt"
+- start service using "python qna_service.py"
+
+#use
+
+## uploading a document for ingestion to vector DB 
+
+curl --location --request PUT 'localhost:5000/uploader' --form 'file=@"test.pdf"'  
+
+## querying over ingested documents
+
+curl --location 'localhost:5000/search-answers' --header 'Content-Type: application/json' --data '{"query" : "query text goes here"}'
+
+# if error comes with topn :
+
+RUN pip install cython==0.29.36 numpy
+RUN pip install sparse_dot_topn==0.3.0 --no-cache-dir --no-build-isolation
+RUN pip install sparse-dot-topn-for-blocks --no-cache-dir --no-build-isolation
